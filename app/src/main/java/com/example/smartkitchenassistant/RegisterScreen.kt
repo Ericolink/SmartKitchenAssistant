@@ -1,5 +1,6 @@
 package com.example.smartkitchenassistant
 
+import android.app.Activity
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -33,27 +34,57 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.auth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegisterScreen (onClickBack : ()-> Unit = {}) {
-    var name by remember {
+fun RegisterScreen (onClickBack : ()-> Unit = {}, onSuccessfulRegister : ()-> Unit = {}) {
+
+    val auth = Firebase.auth
+    val activity = LocalView.current.context as Activity
+
+    //ESTADOS DE LOS IMPUT
+
+    var inputName by remember {
         mutableStateOf("")
     }
-    var email by remember {
+    var inputEmail by remember {
         mutableStateOf("")
     }
-    var password by remember {
+    var inputPassword by remember {
         mutableStateOf("")
     }
-    var confirmPassword by remember {
+    var inputPasswordConfirmation by remember {
         mutableStateOf("")
     }
+
+    var nameError by remember {
+        mutableStateOf("")
+    }
+    var emailError by remember {
+        mutableStateOf("")
+    }
+    var passwordError by remember {
+        mutableStateOf("")
+    }
+    var passwordConfirmationError by remember {
+        mutableStateOf("")
+    }
+
+    var registerError by remember {
+        mutableStateOf("")
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -97,24 +128,32 @@ fun RegisterScreen (onClickBack : ()-> Unit = {}) {
 
             // Campo: Nombre
             OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
+                value = inputName,
+                onValueChange = { inputName = it },
                 label = { Text("Nombre") },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Person,
-                        contentDescription = "Email Icon"
+                        contentDescription = "Name Icon"
                     )
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                supportingText = {
+                    if (nameError.isNotEmpty()){
+                        Text(
+                            text = nameError,
+                            color = Color.Red
+                        )
+                    }
+                }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             // Campo: Correo
             OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
+                value = inputEmail,
+                onValueChange = { inputEmail = it },
                 label = { Text("Email") },
                 leadingIcon = {
                     Icon(
@@ -122,52 +161,104 @@ fun RegisterScreen (onClickBack : ()-> Unit = {}) {
                         contentDescription = "Email Icon"
                     )
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                supportingText = {
+                    if (emailError.isNotEmpty()){
+                        Text(
+                            text = emailError,
+                            color = Color.Red
+                        )
+                    }
+                }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             // Campo: Contraseña
             OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
+                value = inputPassword,
+                onValueChange = { inputPassword = it },
                 label = { Text("Contraseña") },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Lock,
-                        contentDescription = "Email Icon"
+                        contentDescription = "Password Icon"
                     )
                 },
                 visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                supportingText = {
+                    if (passwordError.isNotEmpty()){
+                        Text(
+                            text = passwordError,
+                            color = Color.Red
+                        )
+                    }
+                }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             // Campo: Confirmar Contraseña
             OutlinedTextField(
-                value = confirmPassword,
-                onValueChange = { confirmPassword = it },
+                value = inputPasswordConfirmation,
+                onValueChange = { inputPasswordConfirmation = it },
                 label = { Text("Confirmar Contraseña") },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Lock,
-                        contentDescription = "Email Icon"
+                        contentDescription = "Password Confirmation Icon"
                     )
                 },
                 visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                supportingText = {
+                    if (passwordConfirmationError.isNotEmpty()){
+                        Text(
+                            text = passwordConfirmationError,
+                            color = Color.Red
+                        )
+                    }
+                }
             )
+
+            if (registerError.isNotEmpty()){
+                Text(registerError, color = Color.Red)
+            }
 
             Spacer(modifier = Modifier.height(20.dp))
 
             // Botón de Registro
             Button(
                 onClick = {
-                    Log.i(
-                        "Register",
-                        "Nombre: $name, Email: $email, Password: $password, Confirm: $confirmPassword"
-                    )
+
+                    val isValidName = validateName(inputName).first
+                    val isValidEmail = validateEmail(inputEmail).first
+                    val isValidPassword = validatePassword(inputPassword).first
+                    val isValidConfirmPassword = validateConfirmPassword(inputPassword, inputPasswordConfirmation).first
+
+                    nameError = validateName(inputName).second
+                    emailError = validateEmail(inputEmail).second
+                    passwordError = validatePassword(inputPassword).second
+                    passwordConfirmationError = validateConfirmPassword(inputPassword, inputPasswordConfirmation).second
+
+                    if (isValidName && isValidEmail && isValidPassword && isValidConfirmPassword){
+                        auth.createUserWithEmailAndPassword(inputEmail, inputPassword).
+                                addOnCompleteListener(activity) { task ->
+                                    if (task.isSuccessful){
+                                        onSuccessfulRegister()
+                                    }else{
+                                        registerError = when(task.isSuccessful){
+                                            is FirebaseAuthInvalidCredentialsException -> "Correo invalido"
+                                            is FirebaseAuthUserCollisionException -> "Correo ya registrado"
+                                            else -> "Error al registrarse"
+                                        }
+                                    }
+                                }
+                    }else{
+                        registerError = "Hubo un error en el register"
+                    }
+
                 },
                 modifier = Modifier
                     .fillMaxWidth()
