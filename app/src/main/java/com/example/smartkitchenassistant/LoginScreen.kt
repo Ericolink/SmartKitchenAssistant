@@ -7,14 +7,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
-import com.example.smartkitchenassistant.R
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,9 +30,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.smartkitchenassistant.R
 
 @Composable
-fun loginScreen(){
+fun loginScreen(onClickRegister : ()-> Unit = {}){
     var email by remember {
         mutableStateOf("")
     }
@@ -53,14 +57,28 @@ fun loginScreen(){
             email = it
         }, label = {
             Text(text = "Correo Electronico")
-        })
+        },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Email,
+                    contentDescription = "Email Icon"
+                )
+            }
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
         OutlinedTextField(value = password, onValueChange = {
             password = it
         }, label = {
             Text(text = "Contraseña")
-        }, visualTransformation = PasswordVisualTransformation())
+        },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = "Email Icon"
+                )
+            },
+            visualTransformation = PasswordVisualTransformation())
         Spacer(modifier = Modifier.height(16.dp))
         Button(onClick = {
             Log.i("Login", "Email: $email, Password: $password")
@@ -68,7 +86,12 @@ fun loginScreen(){
             Text(text = "Iniciar Sesion")
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+        TextButton(onClick = onClickRegister) {
+            Text("¿No tienes una cuenta? Registrate")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
         TextButton(onClick = { }) {
             Text(text = "Olvide mi contraseña", modifier = Modifier.clickable{
 
