@@ -1,21 +1,26 @@
 package com.example.smartkitchenassistant.ui.theme
 
-import android.util.Log
+import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -25,79 +30,127 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.smartkitchenassistant.R
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.auth
 
 @Composable
-fun loginScreen(onClickRegister : ()-> Unit = {}){
-    var email by remember {
+fun loginScreen(onClickRegister : ()-> Unit = {}, onSuccessfulLogin : ()-> Unit = {}){
+
+    val auth = Firebase.auth
+    val activity = LocalView.current.context as Activity
+
+    //ESTADOS
+    var inputEmail by remember {
         mutableStateOf("")
     }
-    var password by remember {
+    var inputPassword by remember {
+        mutableStateOf("")
+    }
+    var loginError by remember {
         mutableStateOf("")
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Image(painter = painterResource(id = R.drawable.logo1), contentDescription = "Login Image",
-            modifier = Modifier.size(200.dp))
-        Text(text = "Bienvenido", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(text = "Inicia sesion en tu cuenta")
+    Scaffold { paddingValues ->
+        Column(
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxSize()
+                .imePadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 32.dp)
+                ,
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.logo1),
+                contentDescription = "Login Image",
+                modifier = Modifier.size(200.dp)
+            )
+            Text(text = "Bienvenido", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = "Inicia sesion en tu cuenta")
 
-        Spacer(modifier = Modifier.height(16.dp))
-        OutlinedTextField(value = email, onValueChange = {
-            email = it
-        }, label = {
-            Text(text = "Correo Electronico")
-        },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Email,
-                    contentDescription = "Email Icon"
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = inputEmail,
+                onValueChange = { inputEmail = it },
+                label = {
+                    Text(text = "Correo Electronico")
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Email,
+                        contentDescription = "Email Icon"
+                    )
+                }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = inputPassword,
+                onValueChange = { inputPassword = it },
+                label = {
+                    Text(text = "Contraseña")
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = "Password Icon"
+                    )
+                },
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (loginError.isNotEmpty()){
+                Text(
+                    loginError,
+                    color = Color.Red,
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(bottom = 8.dp)
                 )
             }
-        )
 
-        Spacer(modifier = Modifier.height(16.dp))
-        OutlinedTextField(value = password, onValueChange = {
-            password = it
-        }, label = {
-            Text(text = "Contraseña")
-        },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = "Email Icon"
-                )
-            },
-            visualTransformation = PasswordVisualTransformation())
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = {
-            Log.i("Login", "Email: $email, Password: $password")
-        }) {
-            Text(text = "Iniciar Sesion")
+            Button(onClick = {
+                auth.signInWithEmailAndPassword(inputEmail, inputPassword)
+                    .addOnCompleteListener(activity) { task ->
+                        if (task.isSuccessful) {
+                            onSuccessfulLogin()
+                        } else {
+                            loginError = when(task.exception){
+                                is FirebaseAuthInvalidCredentialsException -> "Correo o contraseña incorrecta"
+                                is FirebaseAuthInvalidUserException -> "No existe una cuenta con este correo"
+                                else -> "Error al iniciar sesión. Intenta de nuevo"
+                            }
+                        }
+                    }
+            }) {
+                Text(text = "Iniciar Sesion")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            TextButton(onClick = onClickRegister) {
+                Text("¿No tienes una cuenta? Registrate")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            TextButton(onClick = { }) {
+                Text(text = "Olvide mi contraseña", modifier = Modifier.clickable {
+
+                })
+            }
+
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-        TextButton(onClick = onClickRegister) {
-            Text("¿No tienes una cuenta? Registrate")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-        TextButton(onClick = { }) {
-            Text(text = "Olvide mi contraseña", modifier = Modifier.clickable{
-
-            })
-        }
-
     }
 
 }

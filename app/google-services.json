@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "734030409071",
+    "project_id": "smartkitchenassistantas",
+    "storage_bucket": "smartkitchenassistantas.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:734030409071:android:3fbddb9ba4cec1e2748c9a",
+        "android_client_info": {
+          "package_name": "com.example.smartkitchenassistant"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCn2wlNNshn7Im6bkzw4OGsgoJ2WFnCwuM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
