@@ -8,11 +8,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
@@ -34,9 +36,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.smartkitchenassistant.R
+import com.example.smartkitchenassistant.validateEmail
+import com.example.smartkitchenassistant.validatePassword
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
@@ -58,6 +65,12 @@ fun loginScreen(onClickRegister : ()-> Unit = {}, onSuccessfulLogin : ()-> Unit 
     var loginError by remember {
         mutableStateOf("")
     }
+    var emailError by remember {
+        mutableStateOf("")
+    }
+    var passwordError by remember {
+        mutableStateOf("")
+    }
 
     Scaffold { paddingValues ->
         Column(
@@ -66,8 +79,7 @@ fun loginScreen(onClickRegister : ()-> Unit = {}, onSuccessfulLogin : ()-> Unit 
                 .fillMaxSize()
                 .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 32.dp)
-                ,
+                .padding(horizontal = 32.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -92,7 +104,20 @@ fun loginScreen(onClickRegister : ()-> Unit = {}, onSuccessfulLogin : ()-> Unit 
                         imageVector = Icons.Default.Email,
                         contentDescription = "Email Icon"
                     )
-                }
+                },
+                supportingText = {
+                    if (emailError.isNotEmpty()){
+                        Text(
+                            text = emailError,
+                            color = Color.Red
+                        )
+                    }
+                },
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.None,
+                    autoCorrect = false,
+                    keyboardType = KeyboardType.Email
+                )
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -108,6 +133,20 @@ fun loginScreen(onClickRegister : ()-> Unit = {}, onSuccessfulLogin : ()-> Unit 
                         contentDescription = "Password Icon"
                     )
                 },
+                supportingText = {
+                    if (passwordError.isNotEmpty()){
+                        Text(
+                            text = passwordError,
+                            color = Color.Red
+                        )
+                    }
+                },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.None,
+                    autoCorrect = false,
+                    keyboardType = KeyboardType.Password
+                )
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -122,18 +161,30 @@ fun loginScreen(onClickRegister : ()-> Unit = {}, onSuccessfulLogin : ()-> Unit 
             }
 
             Button(onClick = {
-                auth.signInWithEmailAndPassword(inputEmail, inputPassword)
-                    .addOnCompleteListener(activity) { task ->
-                        if (task.isSuccessful) {
-                            onSuccessfulLogin()
-                        } else {
-                            loginError = when(task.exception){
-                                is FirebaseAuthInvalidCredentialsException -> "Correo o contraseña incorrecta"
-                                is FirebaseAuthInvalidUserException -> "No existe una cuenta con este correo"
-                                else -> "Error al iniciar sesión. Intenta de nuevo"
+
+                val isValidEmail: Boolean = validateEmail(inputEmail).first
+                val isValidPassword = validatePassword(inputPassword).first
+
+                emailError = validateEmail(inputEmail).second
+                passwordError = validatePassword(inputPassword).second
+
+                if (isValidEmail && isValidPassword){
+                    auth.signInWithEmailAndPassword(inputEmail, inputPassword)
+                        .addOnCompleteListener(activity) { task ->
+                            if (task.isSuccessful) {
+                                onSuccessfulLogin()
+                            } else {
+                                loginError = when(task.exception){
+                                    is FirebaseAuthInvalidCredentialsException -> "Correo o contraseña incorrecta"
+                                    is FirebaseAuthInvalidUserException -> "No existe una cuenta con este correo"
+                                    else -> "Error al iniciar sesión. Intenta de nuevo"
+                                }
                             }
                         }
-                    }
+                }else {
+
+                }
+
             }) {
                 Text(text = "Iniciar Sesion")
             }
