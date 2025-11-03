@@ -1,5 +1,6 @@
 package com.example.smartkitchenassistant
 
+import HomeScreen
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.NavHost
