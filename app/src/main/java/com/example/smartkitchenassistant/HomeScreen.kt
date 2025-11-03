@@ -1,15 +1,13 @@
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.Firebase
@@ -21,29 +19,25 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
     val auth = Firebase.auth
     val user = auth.currentUser
 
+    // Estado para la pestaña seleccionada
+    var selectedTab by remember { mutableStateOf(0) }
+
+    val tabs = listOf(
+        BottomNavItem("Buscar", Icons.Default.Search),
+        BottomNavItem("Ingredientes", Icons.Default.Favorite),
+        BottomNavItem("Mi despensa", Icons.AutoMirrored.Filled.List),
+        BottomNavItem("Recomendaciones", Icons.Default.Star),
+        BottomNavItem("Mi perfil", Icons.Default.Person)
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text(
-                            text = user?.email ?: "invitado",
-                            fontSize = 18.sp
-                        )
-                        Text(
-                            text = "¿Qué te gustaría hacer hoy?",
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { /* acción futura */ }) {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Perfil"
-                        )
-                    }
+                    Text(
+                        text = user?.email ?: "invitado",
+                        fontSize = 18.sp
+                    )
                 },
                 actions = {
                     IconButton(onClick = {
@@ -51,60 +45,72 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
                         onClickLogout()
                     }) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ExitToApp, // ícono de cerrar sesión correcto
+                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                             contentDescription = "Cerrar sesión"
                         )
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
                 colors = TopAppBarDefaults.mediumTopAppBarColors(
-                    containerColor = Color(0xFFF2EAD3), // color de la barra
-                    titleContentColor = Color.Black, // color del texto
+                    containerColor = Color(0xFFF2EAD3),
+                    titleContentColor = Color.Black
                 )
             )
         },
-        containerColor = Color(0xFFF9F5F0), // color de fondo de la app
-        floatingActionButton = {
-            FloatingActionButton(onClick = { /* Activar asistente de voz */ }) {
-                Text("🎤")
+        containerColor = Color(0xFFF9F5F0),
+        bottomBar = {
+            NavigationBar(
+                containerColor = Color(0xFFF2EAD3)
+            ) {
+                tabs.forEachIndexed { index, item ->
+                    NavigationBarItem(
+                        icon = { Icon(item.icon, contentDescription = item.title) },
+                        label = { Text(item.title, fontSize = 12.sp) },
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index }
+                    )
+                }
             }
         }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFFF9F5F0)) // asegurar background
-                .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-
-            item { HomeCard("Ver recetas") { /* Navegar a recetas */ } }
-            item { HomeCard("Dispositivos conectados") { /* Navegar a dispositivos */ } }
-            item { HomeCard("Temporizador de cocina") { /* Navegar a temporizador */ } }
-            item { HomeCard("Consejos del día") { /* Navegar a consejos */ } }
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)) {
+            when(selectedTab) {
+                0 -> BuscarRecetasScreen()
+                1 -> AgregarIngredientesScreen()
+                2 -> MiDespensaScreen()
+                3 -> RecomendacionesScreen()
+            }
         }
     }
 }
 
+data class BottomNavItem(val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
+
 @Composable
-fun HomeCard(title: String, onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            Text(
-                text = title,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
+fun BuscarRecetasScreen() {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text("Pantalla Buscar Recetas")
+    }
+}
+
+@Composable
+fun AgregarIngredientesScreen() {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text("Pantalla Agregar Ingredientes")
+    }
+}
+
+@Composable
+fun MiDespensaScreen() {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text("Pantalla Mi Despensa")
+    }
+}
+
+@Composable
+fun RecomendacionesScreen() {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text("Pantalla Recomendaciones")
     }
 }
