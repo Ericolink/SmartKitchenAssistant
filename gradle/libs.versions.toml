@@ -13,6 +13,8 @@ navigationCompose = "2.9.5"
 firebaseAuth = "24.0.1"
 firebasePerfKtx = "22.0.3"
 ui = "1.9.4"
+uiUnit = "1.9.4"
+foundation = "1.9.4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -34,6 +36,8 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth", version.ref = "firebaseAuth" }
 firebase-perf-ktx = { group = "com.google.firebase", name = "firebase-perf-ktx", version.ref = "firebasePerfKtx" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
+androidx-compose-ui-unit = { group = "androidx.compose.ui", name = "ui-unit", version.ref = "uiUnit" }
+androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

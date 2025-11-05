@@ -1,15 +1,23 @@
 package com.example.smartkitchenassistant
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -21,14 +29,14 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
     val auth = Firebase.auth
     val user = auth.currentUser
 
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableIntStateOf(0) }
 
     val tabs = listOf(
-        BottomNavItem("Buscar recetas", Icons.Default.Search),
-        BottomNavItem("Agregar ingredientes", Icons.Default.Favorite),
-        BottomNavItem("Mi despensa", Icons.AutoMirrored.Filled.List),
+        BottomNavItem("Buscar", Icons.Default.Search),
+        BottomNavItem("Ingredientes", Icons.Default.Favorite),
+        BottomNavItem("Despensa", Icons.AutoMirrored.Filled.List),
         BottomNavItem("Recomendaciones", Icons.Default.Star),
-        BottomNavItem("Mi perfil", Icons.Default.Person)
+        BottomNavItem("Perfil", Icons.Default.Person)
     )
 
     Scaffold(
@@ -47,7 +55,8 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                            contentDescription = "Cerrar sesión"
+                            contentDescription = "Cerrar sesión",
+                            tint = Color(0xFF344F1F)
                         )
                     }
                 },
@@ -58,25 +67,68 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
             )
         },
         containerColor = Color(0xFFF9F5F0),
+
+        // 🔹 BARRA INFERIOR SOLO CON ICONOS (SIN EFECTO MORADO)
         bottomBar = {
-            NavigationBar(containerColor = Color(0xFFF2EAD3)) {
+            NavigationBar(
+                modifier = Modifier
+                    .shadow(
+                        elevation = 10.dp,
+                        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                        clip = false
+                    ),
+                containerColor = Color(0xFFF2EAD3),
+                tonalElevation = 10.dp
+            ) {
                 tabs.forEachIndexed { index, item ->
+                    val selected = selectedTab == index
+
                     NavigationBarItem(
-                        icon = { Icon(item.icon, contentDescription = item.title) },
-                        label = { Text(item.title, fontSize = 12.sp) },
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index }
+                        icon = {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .size(50.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (selected) Color(0xFFF4991A).copy(alpha = 0.15f)
+                                        else Color.Transparent
+                                    )
+                                    // 🔸 Sin ripple ni sombra morada
+                                    .clickable(
+                                        indication = null,
+                                        interactionSource = remember { MutableInteractionSource() }
+                                    ) { selectedTab = index }
+                            ) {
+                                Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = item.title,
+                                    tint = if (selected) Color(0xFFF4991A) else Color(0xFF344F1F),
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+                        },
+                        selected = selected,
+                        onClick = { selectedTab = index },
+                        label = null,
+                        alwaysShowLabel = false,
+                        colors = NavigationBarItemDefaults.colors(
+                            indicatorColor = Color.Transparent,
+                            selectedIconColor = Color(0xFFF4991A),
+                            unselectedIconColor = Color(0xFF344F1F)
+                        )
                     )
                 }
             }
         }
     ) { padding ->
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)
-            .background(Color(0xFFF9F5F0))
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .background(Color(0xFFF9F5F0))
         ) {
-            when(selectedTab) {
+            when (selectedTab) {
                 0 -> BuscarRecetasScreen()
                 1 -> AgregarIngredientesScreen()
                 2 -> MiDespensaScreen()
