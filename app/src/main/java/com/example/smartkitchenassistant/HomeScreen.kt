@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.example.smartkitchenassistant.screens.*
+import com.example.smartkitchenassistant.screens.buscar.BuscarRecetasScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

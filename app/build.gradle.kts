@@ -73,6 +73,13 @@ dependencies {
     // Opcional: Firebase Performance Monitoring
     implementation("com.google.firebase:firebase-perf-ktx:20.5.0")
 
+    //API de recetas
+    implementation("com.squareup.retrofit2:retrofit:3.0.0")
+    implementation("com.squareup.retrofit2:converter-gson:3.0.0")
+    implementation("io.coil-kt:coil-compose:2.7.0")
+
+
+
     // Tests
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
