@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import java.net.URL
 import java.net.URLEncoder
+import java.net.URL
 
 data class Meal(
     val strMeal: String,
@@ -19,8 +19,44 @@ data class Meal(
 )
 
 class BuscarRecetasViewModel : ViewModel() {
+
     private val _meals = MutableStateFlow<List<Meal>>(emptyList())
     val meals = _meals.asStateFlow()
+
+    // Diccionario simple ES -> EN
+    private val diccionarioIngredientes = mapOf(
+        "pollo" to "chicken",
+        "carne" to "beef",
+        "res" to "beef",
+        "cerdo" to "pork",
+        "puerco" to "pork",
+        "pescado" to "fish",
+        "atun" to "tuna",
+        "atún" to "tuna",
+        "huevo" to "egg",
+        "huevos" to "eggs",
+        "leche" to "milk",
+        "harina" to "flour",
+        "chile" to "chili",
+        "chiles" to "chili",
+        "cebolla" to "onion",
+        "ajo" to "garlic",
+        "tomate" to "tomato",
+        "papas" to "potato",
+        "papa" to "potato",
+        "arroz" to "rice",
+        "pasta" to "pasta",
+        "queso" to "cheese",
+        "mantequilla" to "butter",
+        "sal" to "salt",
+        "azucar" to "sugar",
+        "azúcar" to "sugar"
+    )
+
+    private fun traducirIngrediente(palabra: String): String {
+        val lower = palabra.lowercase()
+        return diccionarioIngredientes[lower] ?: palabra
+    }
 
     fun buscarRecetas(query: String) {
         val raw = query.trim()
@@ -31,10 +67,11 @@ class BuscarRecetasViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                // encode the query (spaces, accents, etc.)
-                val encoded = URLEncoder.encode(raw, "UTF-8")
+                // 1. traducir (local)
+                val translated = traducirIngrediente(raw)
+                Log.d("BuscarVM", "Traducido '$raw' -> '$translated'")
 
-                // NOTE: use filter.php?i= for ingredient search, or search.php?s= for name search
+                val encoded = URLEncoder.encode(translated, "UTF-8")
                 val urlStr = "https://www.themealdb.com/api/json/v1/1/filter.php?i=$encoded"
 
                 Log.d("BuscarVM", "Request URL: $urlStr")
@@ -43,7 +80,7 @@ class BuscarRecetasViewModel : ViewModel() {
                     URL(urlStr).readText()
                 }
 
-                Log.d("BuscarVM", "Response: $responseText")
+                Log.d("BuscarVM", "Response: ${responseText.take(500)}")
 
                 val json = JSONObject(responseText)
                 val mealsArray = json.optJSONArray("meals")
@@ -52,17 +89,21 @@ class BuscarRecetasViewModel : ViewModel() {
                     val lista = mutableListOf<Meal>()
                     for (i in 0 until mealsArray.length()) {
                         val item = mealsArray.getJSONObject(i)
-                        val name = item.optString("strMeal", "")
-                        val thumb = item.optString("strMealThumb", "")
-                        lista.add(Meal(strMeal = name, strMealThumb = thumb, strCategory = null))
+                        lista.add(
+                            Meal(
+                                strMeal = item.optString("strMeal", ""),
+                                strMealThumb = item.optString("strMealThumb", ""),
+                                strCategory = null
+                            )
+                        )
                     }
                     _meals.value = lista
                 } else {
-                    // API returned {"meals":null} -> no results
-                    _meals.value = emptyList()
+                    _meals.value = emptyList() // sin resultados
                 }
+
             } catch (e: Exception) {
-                Log.e("BuscarVM", "Error buscarRecetas", e)
+                Log.e("BuscarVM", "Error buscando recetas", e)
                 _meals.value = emptyList()
             }
         }
