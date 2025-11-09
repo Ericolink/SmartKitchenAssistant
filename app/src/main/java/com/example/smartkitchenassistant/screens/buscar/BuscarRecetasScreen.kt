@@ -4,10 +4,14 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -19,75 +23,110 @@ import coil.compose.rememberAsyncImagePainter
 
 @Composable
 fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
+
+    // Paleta de colores
+    val Primario = Color(0xFFF9F5F0)
+    val Secundario = Color(0xFFF2EAD3)
+    val naranja = Color(0xFFF4991A)
+    val verde = Color(0xFF344F1F)
+
     var query by remember { mutableStateOf(TextFieldValue("")) }
     val meals by viewModel.meals.collectAsState()
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .padding(16.dp)) {
-
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Primario)
+            .padding(16.dp)
+    ) {
+        // Título
         Text(
             text = "Buscar recetas",
             style = MaterialTheme.typography.titleLarge,
-            fontSize = 24.sp
+            fontSize = 26.sp,
+            color = verde
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
-        // 🔹 Input de búsqueda mejorado para Material3
+        // Input de búsqueda
         OutlinedTextField(
             value = query,
             onValueChange = {
                 query = it
-                if (it.text.isNotEmpty()) {
-                    viewModel.buscarRecetas(it.text)
-                }
+                if (it.text.isNotEmpty()) viewModel.buscarRecetas(it.text)
             },
-            label = { Text("Buscar receta...") },
-            placeholder = { Text("Ejemplo: pollo, arroz, pasta...") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFFF5F5F5)),
+            label = { Text("Buscar receta...", color = verde) },
+            placeholder = { Text("Ejemplo: pollo") },
             singleLine = true,
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = "Buscar",
-                    tint = Color.Gray
+                    tint = verde
                 )
             },
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Secundario),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color(0xFF4CAF50),
-                unfocusedBorderColor = Color.Gray,
-                cursorColor = Color(0xFF4CAF50)
+                focusedBorderColor = naranja,
+                unfocusedBorderColor = verde,
+                cursorColor = naranja
             )
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        // 🔹 Lista de recetas
-        meals.forEach { meal ->
-            Row(modifier = Modifier.padding(vertical = 8.dp)) {
-                Image(
-                    painter = rememberAsyncImagePainter(meal.strMealThumb),
-                    contentDescription = meal.strMeal,
-                    modifier = Modifier.size(80.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(meal.strMeal, style = MaterialTheme.typography.titleMedium)
-                    Text(meal.strCategory ?: "", style = MaterialTheme.typography.bodySmall)
+        // Lista con LazyColumn (scroll suave)
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            items(meals) { meal ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Secundario)
+                        .clickable { }
+                        .padding(12.dp)
+                ) {
+                    Image(
+                        painter = rememberAsyncImagePainter(meal.strMealThumb),
+                        contentDescription = meal.strMeal,
+                        modifier = Modifier
+                            .size(90.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                    )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column(
+                        modifier = Modifier.align(Alignment.CenterVertically)
+                    ) {
+                        Text(
+                            text = meal.strMeal,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = verde
+                        )
+                        Text(
+                            text = meal.strCategory ?: "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = naranja
+                        )
+                    }
                 }
             }
         }
 
-        // 🔹 Mensaje si no se encuentran recetas
+        // Mensaje si no hay resultados
         if (meals.isEmpty() && query.text.isNotEmpty()) {
             Text(
                 text = "No se encontraron recetas para \"${query.text}\"",
+                color = verde,
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 16.dp)
+                modifier = Modifier.padding(top = 20.dp)
             )
         }
     }
