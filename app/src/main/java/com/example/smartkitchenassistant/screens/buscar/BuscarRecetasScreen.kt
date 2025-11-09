@@ -57,7 +57,7 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
                 if (it.text.isNotEmpty()) viewModel.buscarRecetas(it.text)
             },
             label = { Text("Buscar receta...", color = verde) },
-            placeholder = { Text("Ejemplo: pollo") },
+            placeholder = { Text("Ejemplo: pizza") },
             singleLine = true,
             leadingIcon = {
                 Icon(
