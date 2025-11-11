@@ -2,9 +2,13 @@ package com.example.smartkitchenassistant
 
 import android.app.Activity
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,16 +39,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.modifier.modifierLocalOf
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
+import kotlinx.coroutines.handleCoroutineException
+import kotlin.math.sign
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,6 +67,7 @@ fun RegisterScreen (onClickBack : ()-> Unit = {}, onSuccessfulRegister : ()-> Un
 
     val auth = Firebase.auth
     val activity = LocalView.current.context as Activity
+    val context = LocalContext.current
 
     //ESTADOS DE LOS IMPUT
 
@@ -83,6 +99,27 @@ fun RegisterScreen (onClickBack : ()-> Unit = {}, onSuccessfulRegister : ()-> Un
 
     var registerError by remember {
         mutableStateOf("")
+    }
+
+    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+        .requestIdToken(context.getString(R.string.default_web_client_id))
+        .requestEmail()
+        .build()
+    val googleSignInClient: GoogleSignInClient = GoogleSignIn.getClient(context, gso)
+
+    val googleLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        try {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            val account = task.getResult(ApiException::class.java)
+            handleGoogleRegister(account, auth, onSuccessfulRegister, { err ->
+                registerError = err
+            })
+        } catch (e: Exception) {
+            Log.d("RegisterScreen", "GoogleSignIn fallo: ${e.localizedMessage}")
+            registerError = "Fallo el registro con Google."
+        }
     }
 
     Scaffold(
@@ -243,7 +280,7 @@ fun RegisterScreen (onClickBack : ()-> Unit = {}, onSuccessfulRegister : ()-> Un
                     passwordConfirmationError = validateConfirmPassword(inputPassword, inputPasswordConfirmation).second
 
                     if (isValidName && isValidEmail && isValidPassword && isValidConfirmPassword){
-                        auth.createUserWithEmailAndPassword(inputEmail, inputPassword).
+                        /*auth.createUserWithEmailAndPassword(inputEmail, inputPassword).
                                 addOnCompleteListener(activity) { task ->
                                     if (task.isSuccessful){
                                         onSuccessfulRegister()
@@ -254,7 +291,10 @@ fun RegisterScreen (onClickBack : ()-> Unit = {}, onSuccessfulRegister : ()-> Un
                                             else -> "Error al registrarse"
                                         }
                                     }
-                                }
+                                }*/
+                        registerError = "Por favor verifica tu correo con Google para completar el registro."
+                        val signInIntent = googleSignInClient.signInIntent
+                        googleLauncher.launch(signInIntent)
                     }else{
                         registerError = "Hubo un error en el register"
                     }
@@ -266,6 +306,59 @@ fun RegisterScreen (onClickBack : ()-> Unit = {}, onSuccessfulRegister : ()-> Un
             ) {
                 Text(text = "Registro")
             }
+            Spacer(modifier = Modifier.height(12.dp))
+            Row (
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        val signInIntent = googleSignInClient.signInIntent
+                        googleLauncher.launch(signInIntent)
+                    }
+                    .padding(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ){
+                Image(
+                    painter = painterResource(id = R.drawable.ic_google),
+                    contentDescription = "Registrar con Google",
+                    modifier = Modifier
+                        .padding(10.dp)
+                        .size(40.dp)
+                )
+                Text(text = "Registrarse con Google", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            }
         }
+    }
+}
+private fun handleGoogleRegister(
+    account: GoogleSignInAccount?,
+    auth: FirebaseAuth,
+    onSuccess: () -> Unit,
+    onError: (String) -> Unit
+) {
+    if (account == null) {
+        onError("No se obtuvo la cuenta de Google.")
+        return
+    }
+    try {
+        val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+        // Intentamos iniciar sesión con la credencial: si es nuevo usuario, Firebase lo crea automáticamente.
+        auth.signInWithCredential(credential)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    Log.d("RegisterScreen", "Registro con Google exitoso: ${account.email}")
+                    onSuccess()
+                } else {
+                    Log.d("RegisterScreen", "Fallo auth con credencial Google: ${task.exception?.localizedMessage}")
+                    onError("Error al registrarse con Google.")
+                }
+            }
+            .addOnFailureListener {
+                Log.d("RegisterScreen", "Exception en registro Google: ${it.localizedMessage}")
+                onError("Fallo el registro con Google.")
+            }
+    } catch (ex: Exception) {
+        Log.d("RegisterScreen", "Excepcion: ${ex.localizedMessage}")
+        onError("Excepción al registrar con Google.")
     }
 }

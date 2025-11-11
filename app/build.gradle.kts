@@ -65,6 +65,10 @@ dependencies {
     //firebase
     implementation(platform(libs.firebase.bom))
 
+    implementation(libs.play.services.auth.v2120)
+    implementation(libs.firebase.auth.v2300)
+    implementation(libs.play.services.auth)
+
     //auth
     implementation(libs.firebase.auth)
 }

@@ -12,7 +12,20 @@
           "package_name": "com.example.smartkitchenassistant"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "734030409071-ei22a2gh3vo9qbbrrbb2mob0j7nbeio1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.smartkitchenassistant",
+            "certificate_hash": "5be70201d2df77eb49fd4409c403357965db2b85"
+          }
+        },
+        {
+          "client_id": "734030409071-usne868n99fa0k9commahni6h5j0rsga.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCn2wlNNshn7Im6bkzw4OGsgoJ2WFnCwuM"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "734030409071-usne868n99fa0k9commahni6h5j0rsga.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
