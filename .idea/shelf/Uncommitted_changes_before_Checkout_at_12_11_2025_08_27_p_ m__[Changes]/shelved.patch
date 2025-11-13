@@ -1,0 +1,652 @@
+Index: app/src/main/java/com/example/smartkitchenassistant/LoginScreen.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.smartkitchenassistant\r\n\r\nimport android.app.Activity\r\nimport android.util.Log\r\nimport androidx.activity.compose.rememberLauncherForActivityResult\r\nimport androidx.activity.result.contract.ActivityResultContracts\r\nimport androidx.compose.foundation.Image\r\nimport androidx.compose.foundation.clickable\r\nimport androidx.compose.foundation.layout.Arrangement\r\nimport androidx.compose.foundation.layout.Column\r\nimport androidx.compose.foundation.layout.Row\r\nimport androidx.compose.foundation.layout.Spacer\r\nimport androidx.compose.foundation.layout.fillMaxHeight\r\nimport androidx.compose.foundation.layout.fillMaxSize\r\nimport androidx.compose.foundation.layout.fillMaxWidth\r\nimport androidx.compose.foundation.layout.height\r\nimport androidx.compose.foundation.layout.imePadding\r\nimport androidx.compose.foundation.layout.padding\r\nimport androidx.compose.foundation.layout.size\r\nimport androidx.compose.foundation.rememberScrollState\r\nimport androidx.compose.foundation.text.KeyboardOptions\r\nimport androidx.compose.foundation.verticalScroll\r\nimport androidx.compose.material.icons.Icons\r\nimport androidx.compose.material.icons.filled.Email\r\nimport androidx.compose.material.icons.filled.Lock\r\nimport androidx.compose.material3.Button\r\nimport androidx.compose.material3.Icon\r\nimport androidx.compose.material3.OutlinedTextField\r\nimport androidx.compose.material3.Scaffold\r\nimport androidx.compose.material3.Text\r\nimport androidx.compose.material3.TextButton\r\nimport androidx.compose.runtime.Composable\r\nimport androidx.compose.runtime.getValue\r\nimport androidx.compose.runtime.mutableStateOf\r\nimport androidx.compose.runtime.remember\r\nimport androidx.compose.runtime.setValue\r\nimport androidx.compose.ui.Alignment\r\nimport androidx.compose.ui.Modifier\r\nimport androidx.compose.ui.graphics.Color\r\nimport androidx.compose.ui.platform.LocalContext\r\nimport androidx.compose.ui.platform.LocalView\r\nimport androidx.compose.ui.res.painterResource\r\nimport androidx.compose.ui.text.font.FontWeight\r\nimport androidx.compose.ui.text.input.KeyboardCapitalization\r\nimport androidx.compose.ui.text.input.KeyboardType\r\nimport androidx.compose.ui.text.input.PasswordVisualTransformation\r\nimport androidx.compose.ui.unit.dp\r\nimport androidx.compose.ui.unit.sp\r\nimport androidx.navigation.ActivityNavigatorExtras\r\nimport com.google.android.gms.auth.api.signin.GoogleSignInOptions\r\nimport com.google.firebase.Firebase\r\nimport com.google.firebase.auth.FirebaseAuthInvalidCredentialsException\r\nimport com.google.firebase.auth.FirebaseAuthInvalidUserException\r\nimport com.google.firebase.auth.auth\r\nimport com.google.android.gms.auth.api.signin.GoogleSignIn\r\nimport com.google.android.gms.auth.api.signin.GoogleSignInClient\r\nimport com.google.android.gms.common.api.ApiException\r\nimport com.google.android.play.integrity.internal.ac\r\nimport com.google.firebase.auth.GoogleAuthProvider\r\nimport kotlin.contracts.contract\r\n\r\n@Composable\r\nfun loginScreen(onClickRegister : ()-> Unit = {}, onSuccessfulLogin : ()-> Unit = {}){\r\n\r\n    val auth = Firebase.auth\r\n    val activity = LocalView.current.context as Activity\r\n    val context = LocalContext.current\r\n\r\n    //ESTADOS\r\n    var inputEmail by remember {\r\n        mutableStateOf(\"\")\r\n    }\r\n    var inputPassword by remember {\r\n        mutableStateOf(\"\")\r\n    }\r\n    var loginError by remember {\r\n        mutableStateOf(\"\")\r\n    }\r\n    var emailError by remember {\r\n        mutableStateOf(\"\")\r\n    }\r\n    var passwordError by remember {\r\n        mutableStateOf(\"\")\r\n    }\r\n\r\n    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)\r\n        .requestIdToken(context.getString(R.string.default_web_client_id))\r\n        .requestEmail()\r\n        .build()\r\n    val googleSignInClient: GoogleSignInClient = GoogleSignIn.getClient(context, gso)\r\n\r\n    val googleLauncher = rememberLauncherForActivityResult(\r\n        contract = ActivityResultContracts.StartActivityForResult()\r\n    ) { result ->\r\n        try {\r\n            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)\r\n            val account = task.getResult(ApiException::class.java)\r\n            if (account != null && account.email != null) {\r\n                auth.fetchSignInMethodsForEmail(account.email!!)\r\n                    .addOnCompleteListener { fetchTask ->\r\n                        if (fetchTask.isSuccessful) {\r\n                            val signInMethods = fetchTask.result?.signInMethods\r\n                            if (signInMethods == null || signInMethods.isEmpty()) {\r\n                                loginError = \"Debes registrarte primero antes de iniciar sesion con Google.\"\r\n                                googleSignInClient.signOut()\r\n                            } else {\r\n                                val credential = GoogleAuthProvider.getCredential(account.idToken, null)\r\n                                auth.signInWithCredential(credential)\r\n                                    .addOnCompleteListener(activity) { task ->\r\n                                        if (task.isSuccessful) {\r\n                                            onSuccessfulLogin()\r\n                                        } else {\r\n                                            loginError = \"Error al inicar sesion con Google\"\r\n                                        }\r\n                                    }\r\n                                    .addOnFailureListener {\r\n                                        loginError = \"Fallo el autenticar con Google\"\r\n                                    }\r\n                            }\r\n                        } else {\r\n                            loginError = \"Error al verificar el correo en Firebase.\"\r\n                        }\r\n                    }\r\n            } else {\r\n                loginError = \"No se obtuvo el correo de Google.\"\r\n            }\r\n        } catch (ex: Exception) {\r\n            Log.d(\"LoginScreen\", \"GoogleSignIn fallo: ${ex.localizedMessage}\")\r\n            loginError = \"Error en Google Sign-In\"\r\n        }\r\n    }\r\n\r\n    Scaffold { paddingValues ->\r\n        Column(\r\n            modifier = Modifier\r\n                .padding(paddingValues)\r\n                .fillMaxSize()\r\n                .imePadding()\r\n                .verticalScroll(rememberScrollState())\r\n                .padding(horizontal = 32.dp),\r\n            verticalArrangement = Arrangement.Center,\r\n            horizontalAlignment = Alignment.CenterHorizontally,\r\n        ) {\r\n            Image(\r\n                painter = painterResource(id = R.drawable.logo1),\r\n                contentDescription = \"Login Image\",\r\n                modifier = Modifier.size(200.dp)\r\n            )\r\n            Text(text = \"Bienvenido\", fontSize = 20.sp, fontWeight = FontWeight.Bold)\r\n            Spacer(modifier = Modifier.height(4.dp))\r\n            Text(text = \"Inicia sesion en tu cuenta\")\r\n\r\n            Spacer(modifier = Modifier.height(16.dp))\r\n            OutlinedTextField(\r\n                value = inputEmail,\r\n                onValueChange = { inputEmail = it },\r\n                label = {\r\n                    Text(text = \"Correo Electronico\")\r\n                },\r\n                leadingIcon = {\r\n                    Icon(\r\n                        imageVector = Icons.Default.Email,\r\n                        contentDescription = \"Email Icon\"\r\n                    )\r\n                },\r\n                supportingText = {\r\n                    if (emailError.isNotEmpty()){\r\n                        Text(\r\n                            text = emailError,\r\n                            color = Color.Red\r\n                        )\r\n                    }\r\n                },\r\n                keyboardOptions = KeyboardOptions(\r\n                    capitalization = KeyboardCapitalization.None,\r\n                    autoCorrect = false,\r\n                    keyboardType = KeyboardType.Email\r\n                )\r\n            )\r\n\r\n            Spacer(modifier = Modifier.height(16.dp))\r\n            OutlinedTextField(\r\n                value = inputPassword,\r\n                onValueChange = { inputPassword = it },\r\n                label = {\r\n                    Text(text = \"Contraseña\")\r\n                },\r\n                leadingIcon = {\r\n                    Icon(\r\n                        imageVector = Icons.Default.Lock,\r\n                        contentDescription = \"Password Icon\"\r\n                    )\r\n                },\r\n                supportingText = {\r\n                    if (passwordError.isNotEmpty()){\r\n                        Text(\r\n                            text = passwordError,\r\n                            color = Color.Red\r\n                        )\r\n                    }\r\n                },\r\n                visualTransformation = PasswordVisualTransformation(),\r\n                keyboardOptions = KeyboardOptions(\r\n                    capitalization = KeyboardCapitalization.None,\r\n                    autoCorrect = false,\r\n                    keyboardType = KeyboardType.Password\r\n                )\r\n            )\r\n            Spacer(modifier = Modifier.height(16.dp))\r\n\r\n            if (loginError.isNotEmpty()){\r\n                Text(\r\n                    loginError,\r\n                    color = Color.Red,\r\n                    modifier = Modifier\r\n                        .fillMaxHeight()\r\n                        .padding(bottom = 8.dp)\r\n                )\r\n            }\r\n\r\n            Button(onClick = {\r\n\r\n                val isValidEmail: Boolean = validateEmail(inputEmail).first\r\n                val isValidPassword = validatePassword(inputPassword).first\r\n\r\n                emailError = validateEmail(inputEmail).second\r\n                passwordError = validatePassword(inputPassword).second\r\n\r\n                if (isValidEmail && isValidPassword){\r\n                    auth.signInWithEmailAndPassword(inputEmail, inputPassword)\r\n                        .addOnCompleteListener(activity) { task ->\r\n                            if (task.isSuccessful) {\r\n                                onSuccessfulLogin()\r\n                            } else {\r\n                                loginError = when(task.exception){\r\n                                    is FirebaseAuthInvalidCredentialsException -> \"Correo o contraseña incorrecta\"\r\n                                    is FirebaseAuthInvalidUserException -> \"No existe una cuenta con este correo\"\r\n                                    else -> \"Error al iniciar sesión. Intenta de nuevo\"\r\n                                }\r\n                            }\r\n                        }\r\n                }else {\r\n\r\n                }\r\n\r\n            }) {\r\n                Text(text = \"Iniciar Sesion\")\r\n            }\r\n\r\n            Spacer(modifier = Modifier.height(16.dp))\r\n            TextButton(onClick = onClickRegister) {\r\n                Text(\"¿No tienes una cuenta? Registrate\")\r\n            }\r\n\r\n            Spacer(modifier = Modifier.height(16.dp))\r\n            TextButton(onClick = { }) {\r\n                Text(text = \"Olvide mi contraseña\", modifier = Modifier.clickable {\r\n\r\n                })\r\n            }\r\n\r\n            Spacer(modifier = Modifier.height(16.dp))\r\n\r\n            Row (\r\n                modifier = Modifier\r\n                    .fillMaxWidth()\r\n                    .padding(10.dp)\r\n                    .clickable {\r\n                        val signInIntent = googleSignInClient.signInIntent\r\n                        googleLauncher.launch(signInIntent)\r\n                    },\r\n                verticalAlignment = Alignment.CenterVertically,\r\n                horizontalArrangement = Arrangement.Center\r\n            )\r\n            {\r\n                Image(\r\n                    painter = painterResource(id = R.drawable.ic_google) ,\r\n                    contentDescription = \"Logo con Google\" ,\r\n                    modifier = Modifier\r\n                        .padding(10.dp)\r\n                        .size(40.dp)\r\n                )\r\n                Text(text = \"Login con Google\",\r\n                    fontSize = 18.sp,\r\n                    fontWeight = FontWeight.Bold)\r\n            }\r\n        }\r\n    }\r\n\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/smartkitchenassistant/LoginScreen.kt b/app/src/main/java/com/example/smartkitchenassistant/LoginScreen.kt
+--- a/app/src/main/java/com/example/smartkitchenassistant/LoginScreen.kt	(revision f4fa49376c5546686b3e26b86ec851ff8434bbfc)
++++ b/app/src/main/java/com/example/smartkitchenassistant/LoginScreen.kt	(date 1763004224245)
+@@ -1,18 +1,13 @@
+ package com.example.smartkitchenassistant
+ 
+ import android.app.Activity
+-import android.util.Log
+-import androidx.activity.compose.rememberLauncherForActivityResult
+-import androidx.activity.result.contract.ActivityResultContracts
+ import androidx.compose.foundation.Image
+ import androidx.compose.foundation.clickable
+ import androidx.compose.foundation.layout.Arrangement
+ import androidx.compose.foundation.layout.Column
+-import androidx.compose.foundation.layout.Row
+ import androidx.compose.foundation.layout.Spacer
+ import androidx.compose.foundation.layout.fillMaxHeight
+ import androidx.compose.foundation.layout.fillMaxSize
+-import androidx.compose.foundation.layout.fillMaxWidth
+ import androidx.compose.foundation.layout.height
+ import androidx.compose.foundation.layout.imePadding
+ import androidx.compose.foundation.layout.padding
+@@ -37,7 +32,6 @@
+ import androidx.compose.ui.Alignment
+ import androidx.compose.ui.Modifier
+ import androidx.compose.ui.graphics.Color
+-import androidx.compose.ui.platform.LocalContext
+ import androidx.compose.ui.platform.LocalView
+ import androidx.compose.ui.res.painterResource
+ import androidx.compose.ui.text.font.FontWeight
+@@ -46,25 +40,16 @@
+ import androidx.compose.ui.text.input.PasswordVisualTransformation
+ import androidx.compose.ui.unit.dp
+ import androidx.compose.ui.unit.sp
+-import androidx.navigation.ActivityNavigatorExtras
+-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+ import com.google.firebase.Firebase
+ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+ import com.google.firebase.auth.FirebaseAuthInvalidUserException
+ import com.google.firebase.auth.auth
+-import com.google.android.gms.auth.api.signin.GoogleSignIn
+-import com.google.android.gms.auth.api.signin.GoogleSignInClient
+-import com.google.android.gms.common.api.ApiException
+-import com.google.android.play.integrity.internal.ac
+-import com.google.firebase.auth.GoogleAuthProvider
+-import kotlin.contracts.contract
+ 
+ @Composable
+ fun loginScreen(onClickRegister : ()-> Unit = {}, onSuccessfulLogin : ()-> Unit = {}){
+ 
+     val auth = Firebase.auth
+     val activity = LocalView.current.context as Activity
+-    val context = LocalContext.current
+ 
+     //ESTADOS
+     var inputEmail by remember {
+@@ -83,53 +68,6 @@
+         mutableStateOf("")
+     }
+ 
+-    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+-        .requestIdToken(context.getString(R.string.default_web_client_id))
+-        .requestEmail()
+-        .build()
+-    val googleSignInClient: GoogleSignInClient = GoogleSignIn.getClient(context, gso)
+-
+-    val googleLauncher = rememberLauncherForActivityResult(
+-        contract = ActivityResultContracts.StartActivityForResult()
+-    ) { result ->
+-        try {
+-            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+-            val account = task.getResult(ApiException::class.java)
+-            if (account != null && account.email != null) {
+-                auth.fetchSignInMethodsForEmail(account.email!!)
+-                    .addOnCompleteListener { fetchTask ->
+-                        if (fetchTask.isSuccessful) {
+-                            val signInMethods = fetchTask.result?.signInMethods
+-                            if (signInMethods == null || signInMethods.isEmpty()) {
+-                                loginError = "Debes registrarte primero antes de iniciar sesion con Google."
+-                                googleSignInClient.signOut()
+-                            } else {
+-                                val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+-                                auth.signInWithCredential(credential)
+-                                    .addOnCompleteListener(activity) { task ->
+-                                        if (task.isSuccessful) {
+-                                            onSuccessfulLogin()
+-                                        } else {
+-                                            loginError = "Error al inicar sesion con Google"
+-                                        }
+-                                    }
+-                                    .addOnFailureListener {
+-                                        loginError = "Fallo el autenticar con Google"
+-                                    }
+-                            }
+-                        } else {
+-                            loginError = "Error al verificar el correo en Firebase."
+-                        }
+-                    }
+-            } else {
+-                loginError = "No se obtuvo el correo de Google."
+-            }
+-        } catch (ex: Exception) {
+-            Log.d("LoginScreen", "GoogleSignIn fallo: ${ex.localizedMessage}")
+-            loginError = "Error en Google Sign-In"
+-        }
+-    }
+-
+     Scaffold { paddingValues ->
+         Column(
+             modifier = Modifier
+@@ -259,32 +197,6 @@
+                 })
+             }
+ 
+-            Spacer(modifier = Modifier.height(16.dp))
+-
+-            Row (
+-                modifier = Modifier
+-                    .fillMaxWidth()
+-                    .padding(10.dp)
+-                    .clickable {
+-                        val signInIntent = googleSignInClient.signInIntent
+-                        googleLauncher.launch(signInIntent)
+-                    },
+-                verticalAlignment = Alignment.CenterVertically,
+-                horizontalArrangement = Arrangement.Center
+-            )
+-            {
+-                Image(
+-                    painter = painterResource(id = R.drawable.ic_google) ,
+-                    contentDescription = "Logo con Google" ,
+-                    modifier = Modifier
+-                        .padding(10.dp)
+-                        .size(40.dp)
+-                )
+-                Text(text = "Login con Google",
+-                    fontSize = 18.sp,
+-                    fontWeight = FontWeight.Bold)
+-            }
+-        }
+-    }
+-
+-}
+\ No newline at end of file
++        }
++    }
++}
+Index: app/src/main/java/com/example/smartkitchenassistant/RegisterScreen.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.smartkitchenassistant\r\n\r\nimport android.app.Activity\r\nimport android.util.Log\r\nimport androidx.activity.compose.rememberLauncherForActivityResult\r\nimport androidx.activity.result.contract.ActivityResultContracts\r\nimport androidx.compose.foundation.Image\r\nimport androidx.compose.foundation.clickable\r\nimport androidx.compose.foundation.layout.Arrangement\r\nimport androidx.compose.foundation.layout.Column\r\nimport androidx.compose.foundation.layout.Row\r\nimport androidx.compose.foundation.layout.Spacer\r\nimport androidx.compose.foundation.layout.fillMaxSize\r\nimport androidx.compose.foundation.layout.fillMaxWidth\r\nimport androidx.compose.foundation.layout.height\r\nimport androidx.compose.foundation.layout.padding\r\nimport androidx.compose.foundation.layout.size\r\nimport androidx.compose.foundation.rememberScrollState\r\nimport androidx.compose.foundation.verticalScroll\r\nimport androidx.compose.material.icons.Icons\r\nimport androidx.compose.material.icons.automirrored.filled.ArrowBack\r\nimport androidx.compose.material.icons.filled.ArrowBack\r\nimport androidx.compose.material.icons.filled.Email\r\nimport androidx.compose.material.icons.filled.Lock\r\nimport androidx.compose.material.icons.filled.Person\r\nimport androidx.compose.material3.Button\r\nimport androidx.compose.material3.ExperimentalMaterial3Api\r\nimport androidx.compose.material3.Icon\r\nimport androidx.compose.material3.IconButton\r\nimport androidx.compose.material3.OutlinedTextField\r\nimport androidx.compose.material3.Scaffold\r\nimport androidx.compose.material3.Text\r\nimport androidx.compose.material3.TopAppBar\r\nimport androidx.compose.runtime.Composable\r\nimport androidx.compose.runtime.getValue\r\nimport androidx.compose.runtime.mutableStateOf\r\nimport androidx.compose.runtime.remember\r\nimport androidx.compose.runtime.setValue\r\nimport androidx.compose.ui.Alignment\r\nimport androidx.compose.ui.Modifier\r\nimport androidx.compose.ui.graphics.Color\r\nimport androidx.compose.ui.modifier.modifierLocalOf\r\nimport androidx.compose.ui.platform.LocalContext\r\nimport androidx.compose.ui.platform.LocalView\r\nimport androidx.compose.ui.res.painterResource\r\nimport androidx.compose.ui.text.font.FontWeight\r\nimport androidx.compose.ui.text.input.PasswordVisualTransformation\r\nimport androidx.compose.ui.unit.dp\r\nimport androidx.compose.ui.unit.sp\r\nimport com.google.android.gms.auth.api.signin.GoogleSignIn\r\nimport com.google.android.gms.auth.api.signin.GoogleSignInAccount\r\nimport com.google.android.gms.auth.api.signin.GoogleSignInClient\r\nimport com.google.android.gms.auth.api.signin.GoogleSignInOptions\r\nimport com.google.android.gms.common.api.ApiException\r\nimport com.google.firebase.Firebase\r\nimport com.google.firebase.auth.FirebaseAuth\r\nimport com.google.firebase.auth.FirebaseAuthInvalidCredentialsException\r\nimport com.google.firebase.auth.FirebaseAuthUserCollisionException\r\nimport com.google.firebase.auth.GoogleAuthProvider\r\nimport com.google.firebase.auth.auth\r\nimport kotlinx.coroutines.handleCoroutineException\r\nimport kotlin.math.sign\r\n\r\n@OptIn(ExperimentalMaterial3Api::class)\r\n@Composable\r\nfun RegisterScreen (onClickBack : ()-> Unit = {}, onSuccessfulRegister : ()-> Unit = {}) {\r\n\r\n    val auth = Firebase.auth\r\n    val activity = LocalView.current.context as Activity\r\n    val context = LocalContext.current\r\n\r\n    //ESTADOS DE LOS IMPUT\r\n\r\n    var inputName by remember {\r\n        mutableStateOf(\"\")\r\n    }\r\n    var inputEmail by remember {\r\n        mutableStateOf(\"\")\r\n    }\r\n    var inputPassword by remember {\r\n        mutableStateOf(\"\")\r\n    }\r\n    var inputPasswordConfirmation by remember {\r\n        mutableStateOf(\"\")\r\n    }\r\n\r\n    var nameError by remember {\r\n        mutableStateOf(\"\")\r\n    }\r\n    var emailError by remember {\r\n        mutableStateOf(\"\")\r\n    }\r\n    var passwordError by remember {\r\n        mutableStateOf(\"\")\r\n    }\r\n    var passwordConfirmationError by remember {\r\n        mutableStateOf(\"\")\r\n    }\r\n\r\n    var registerError by remember {\r\n        mutableStateOf(\"\")\r\n    }\r\n\r\n    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)\r\n        .requestIdToken(context.getString(R.string.default_web_client_id))\r\n        .requestEmail()\r\n        .build()\r\n    val googleSignInClient: GoogleSignInClient = GoogleSignIn.getClient(context, gso)\r\n\r\n    val googleLauncher = rememberLauncherForActivityResult(\r\n        contract = ActivityResultContracts.StartActivityForResult()\r\n    ) { result ->\r\n        try {\r\n            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)\r\n            val account = task.getResult(ApiException::class.java)\r\n            handleGoogleRegister(account, auth, onSuccessfulRegister, { err ->\r\n                registerError = err\r\n            })\r\n        } catch (e: Exception) {\r\n            Log.d(\"RegisterScreen\", \"GoogleSignIn fallo: ${e.localizedMessage}\")\r\n            registerError = \"Fallo el registro con Google.\"\r\n        }\r\n    }\r\n\r\n    Scaffold(\r\n        topBar = {\r\n            TopAppBar(\r\n                title = {\r\n                },\r\n                navigationIcon = {\r\n                    IconButton(onClick = onClickBack) {\r\n                        Icon(\r\n                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,\r\n                            contentDescription = \"icon register\"\r\n                        )\r\n                    }\r\n                }\r\n            )\r\n        }\r\n    ) { innerPadding ->\r\n        Column(\r\n            modifier = Modifier\r\n                .fillMaxSize()\r\n                .padding(innerPadding)\r\n                .padding(horizontal = 32.dp)\r\n                .verticalScroll(rememberScrollState()),\r\n            verticalArrangement = Arrangement.Top,\r\n            horizontalAlignment = Alignment.CenterHorizontally )\r\n        {\r\n            // Logo de la app\r\n            Image(\r\n                painter = painterResource(id = R.drawable.logo1),\r\n                contentDescription = \"Register Image\",\r\n                modifier = Modifier.size(200.dp)\r\n            )\r\n\r\n            Text(\r\n                text = \"Registro\",\r\n                fontSize = 22.sp,\r\n                fontWeight = FontWeight.Bold,\r\n                color = androidx.compose.ui.graphics.Color(0xFFFF9800) // Naranja\r\n            )\r\n\r\n            Spacer(modifier = Modifier.height(16.dp))\r\n\r\n            // Campo: Nombre\r\n            OutlinedTextField(\r\n                value = inputName,\r\n                onValueChange = { inputName = it },\r\n                label = { Text(\"Nombre\") },\r\n                leadingIcon = {\r\n                    Icon(\r\n                        imageVector = Icons.Default.Person,\r\n                        contentDescription = \"Name Icon\"\r\n                    )\r\n                },\r\n                modifier = Modifier.fillMaxWidth(),\r\n                supportingText = {\r\n                    if (nameError.isNotEmpty()){\r\n                        Text(\r\n                            text = nameError,\r\n                            color = Color.Red\r\n                        )\r\n                    }\r\n                }\r\n            )\r\n\r\n            Spacer(modifier = Modifier.height(12.dp))\r\n\r\n            // Campo: Correo\r\n            OutlinedTextField(\r\n                value = inputEmail,\r\n                onValueChange = { inputEmail = it },\r\n                label = { Text(\"Email\") },\r\n                leadingIcon = {\r\n                    Icon(\r\n                        imageVector = Icons.Default.Email,\r\n                        contentDescription = \"Email Icon\"\r\n                    )\r\n                },\r\n                modifier = Modifier.fillMaxWidth(),\r\n                supportingText = {\r\n                    if (emailError.isNotEmpty()){\r\n                        Text(\r\n                            text = emailError,\r\n                            color = Color.Red\r\n                        )\r\n                    }\r\n                }\r\n            )\r\n\r\n            Spacer(modifier = Modifier.height(12.dp))\r\n\r\n            // Campo: Contraseña\r\n            OutlinedTextField(\r\n                value = inputPassword,\r\n                onValueChange = { inputPassword = it },\r\n                label = { Text(\"Contraseña\") },\r\n                leadingIcon = {\r\n                    Icon(\r\n                        imageVector = Icons.Default.Lock,\r\n                        contentDescription = \"Password Icon\"\r\n                    )\r\n                },\r\n                visualTransformation = PasswordVisualTransformation(),\r\n                modifier = Modifier.fillMaxWidth(),\r\n                supportingText = {\r\n                    if (passwordError.isNotEmpty()){\r\n                        Text(\r\n                            text = passwordError,\r\n                            color = Color.Red\r\n                        )\r\n                    }\r\n                }\r\n            )\r\n\r\n            Spacer(modifier = Modifier.height(12.dp))\r\n\r\n            // Campo: Confirmar Contraseña\r\n            OutlinedTextField(\r\n                value = inputPasswordConfirmation,\r\n                onValueChange = { inputPasswordConfirmation = it },\r\n                label = { Text(\"Confirmar Contraseña\") },\r\n                leadingIcon = {\r\n                    Icon(\r\n                        imageVector = Icons.Default.Lock,\r\n                        contentDescription = \"Password Confirmation Icon\"\r\n                    )\r\n                },\r\n                visualTransformation = PasswordVisualTransformation(),\r\n                modifier = Modifier.fillMaxWidth(),\r\n                supportingText = {\r\n                    if (passwordConfirmationError.isNotEmpty()){\r\n                        Text(\r\n                            text = passwordConfirmationError,\r\n                            color = Color.Red\r\n                        )\r\n                    }\r\n                }\r\n            )\r\n\r\n            if (registerError.isNotEmpty()){\r\n                Text(registerError, color = Color.Red)\r\n            }\r\n\r\n            Spacer(modifier = Modifier.height(20.dp))\r\n\r\n            // Botón de Registro\r\n            Button(\r\n                onClick = {\r\n\r\n                    val isValidName = validateName(inputName).first\r\n                    val isValidEmail = validateEmail(inputEmail).first\r\n                    val isValidPassword = validatePassword(inputPassword).first\r\n                    val isValidConfirmPassword = validateConfirmPassword(inputPassword, inputPasswordConfirmation).first\r\n\r\n                    nameError = validateName(inputName).second\r\n                    emailError = validateEmail(inputEmail).second\r\n                    passwordError = validatePassword(inputPassword).second\r\n                    passwordConfirmationError = validateConfirmPassword(inputPassword, inputPasswordConfirmation).second\r\n\r\n                    if (isValidName && isValidEmail && isValidPassword && isValidConfirmPassword){\r\n                        /*auth.createUserWithEmailAndPassword(inputEmail, inputPassword).\r\n                                addOnCompleteListener(activity) { task ->\r\n                                    if (task.isSuccessful){\r\n                                        onSuccessfulRegister()\r\n                                    }else{\r\n                                        registerError = when(task.isSuccessful){\r\n                                            is FirebaseAuthInvalidCredentialsException -> \"Correo invalido\"\r\n                                            is FirebaseAuthUserCollisionException -> \"Correo ya registrado\"\r\n                                            else -> \"Error al registrarse\"\r\n                                        }\r\n                                    }\r\n                                }*/\r\n                        registerError = \"Por favor verifica tu correo con Google para completar el registro.\"\r\n                        val signInIntent = googleSignInClient.signInIntent\r\n                        googleLauncher.launch(signInIntent)\r\n                    }else{\r\n                        registerError = \"Hubo un error en el register\"\r\n                    }\r\n\r\n                },\r\n                modifier = Modifier\r\n                    .fillMaxWidth()\r\n                    .height(50.dp)\r\n            ) {\r\n                Text(text = \"Registro\")\r\n            }\r\n            Spacer(modifier = Modifier.height(12.dp))\r\n            Row (\r\n                modifier = Modifier\r\n                    .fillMaxWidth()\r\n                    .clickable {\r\n                        val signInIntent = googleSignInClient.signInIntent\r\n                        googleLauncher.launch(signInIntent)\r\n                    }\r\n                    .padding(10.dp),\r\n                verticalAlignment = Alignment.CenterVertically,\r\n                horizontalArrangement = Arrangement.Center\r\n            ){\r\n                Image(\r\n                    painter = painterResource(id = R.drawable.ic_google),\r\n                    contentDescription = \"Registrar con Google\",\r\n                    modifier = Modifier\r\n                        .padding(10.dp)\r\n                        .size(40.dp)\r\n                )\r\n                Text(text = \"Registrarse con Google\", fontSize = 18.sp, fontWeight = FontWeight.Bold)\r\n            }\r\n        }\r\n    }\r\n}\r\nprivate fun handleGoogleRegister(\r\n    account: GoogleSignInAccount?,\r\n    auth: FirebaseAuth,\r\n    onSuccess: () -> Unit,\r\n    onError: (String) -> Unit\r\n) {\r\n    if (account == null) {\r\n        onError(\"No se obtuvo la cuenta de Google.\")\r\n        return\r\n    }\r\n    try {\r\n        val credential = GoogleAuthProvider.getCredential(account.idToken, null)\r\n        // Intentamos iniciar sesión con la credencial: si es nuevo usuario, Firebase lo crea automáticamente.\r\n        auth.signInWithCredential(credential)\r\n            .addOnCompleteListener { task ->\r\n                if (task.isSuccessful) {\r\n                    Log.d(\"RegisterScreen\", \"Registro con Google exitoso: ${account.email}\")\r\n                    onSuccess()\r\n                } else {\r\n                    Log.d(\"RegisterScreen\", \"Fallo auth con credencial Google: ${task.exception?.localizedMessage}\")\r\n                    onError(\"Error al registrarse con Google.\")\r\n                }\r\n            }\r\n            .addOnFailureListener {\r\n                Log.d(\"RegisterScreen\", \"Exception en registro Google: ${it.localizedMessage}\")\r\n                onError(\"Fallo el registro con Google.\")\r\n            }\r\n    } catch (ex: Exception) {\r\n        Log.d(\"RegisterScreen\", \"Excepcion: ${ex.localizedMessage}\")\r\n        onError(\"Excepción al registrar con Google.\")\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/smartkitchenassistant/RegisterScreen.kt b/app/src/main/java/com/example/smartkitchenassistant/RegisterScreen.kt
+--- a/app/src/main/java/com/example/smartkitchenassistant/RegisterScreen.kt	(revision f4fa49376c5546686b3e26b86ec851ff8434bbfc)
++++ b/app/src/main/java/com/example/smartkitchenassistant/RegisterScreen.kt	(date 1762999620850)
+@@ -2,13 +2,9 @@
+ 
+ import android.app.Activity
+ import android.util.Log
+-import androidx.activity.compose.rememberLauncherForActivityResult
+-import androidx.activity.result.contract.ActivityResultContracts
+ import androidx.compose.foundation.Image
+-import androidx.compose.foundation.clickable
+ import androidx.compose.foundation.layout.Arrangement
+ import androidx.compose.foundation.layout.Column
+-import androidx.compose.foundation.layout.Row
+ import androidx.compose.foundation.layout.Spacer
+ import androidx.compose.foundation.layout.fillMaxSize
+ import androidx.compose.foundation.layout.fillMaxWidth
+@@ -39,27 +35,16 @@
+ import androidx.compose.ui.Alignment
+ import androidx.compose.ui.Modifier
+ import androidx.compose.ui.graphics.Color
+-import androidx.compose.ui.modifier.modifierLocalOf
+-import androidx.compose.ui.platform.LocalContext
+ import androidx.compose.ui.platform.LocalView
+ import androidx.compose.ui.res.painterResource
+ import androidx.compose.ui.text.font.FontWeight
+ import androidx.compose.ui.text.input.PasswordVisualTransformation
+ import androidx.compose.ui.unit.dp
+ import androidx.compose.ui.unit.sp
+-import com.google.android.gms.auth.api.signin.GoogleSignIn
+-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+-import com.google.android.gms.auth.api.signin.GoogleSignInClient
+-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+-import com.google.android.gms.common.api.ApiException
+ import com.google.firebase.Firebase
+-import com.google.firebase.auth.FirebaseAuth
+ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+ import com.google.firebase.auth.FirebaseAuthUserCollisionException
+-import com.google.firebase.auth.GoogleAuthProvider
+ import com.google.firebase.auth.auth
+-import kotlinx.coroutines.handleCoroutineException
+-import kotlin.math.sign
+ 
+ @OptIn(ExperimentalMaterial3Api::class)
+ @Composable
+@@ -67,7 +52,6 @@
+ 
+     val auth = Firebase.auth
+     val activity = LocalView.current.context as Activity
+-    val context = LocalContext.current
+ 
+     //ESTADOS DE LOS IMPUT
+ 
+@@ -101,27 +85,6 @@
+         mutableStateOf("")
+     }
+ 
+-    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+-        .requestIdToken(context.getString(R.string.default_web_client_id))
+-        .requestEmail()
+-        .build()
+-    val googleSignInClient: GoogleSignInClient = GoogleSignIn.getClient(context, gso)
+-
+-    val googleLauncher = rememberLauncherForActivityResult(
+-        contract = ActivityResultContracts.StartActivityForResult()
+-    ) { result ->
+-        try {
+-            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+-            val account = task.getResult(ApiException::class.java)
+-            handleGoogleRegister(account, auth, onSuccessfulRegister, { err ->
+-                registerError = err
+-            })
+-        } catch (e: Exception) {
+-            Log.d("RegisterScreen", "GoogleSignIn fallo: ${e.localizedMessage}")
+-            registerError = "Fallo el registro con Google."
+-        }
+-    }
+-
+     Scaffold(
+         topBar = {
+             TopAppBar(
+@@ -280,21 +243,18 @@
+                     passwordConfirmationError = validateConfirmPassword(inputPassword, inputPasswordConfirmation).second
+ 
+                     if (isValidName && isValidEmail && isValidPassword && isValidConfirmPassword){
+-                        /*auth.createUserWithEmailAndPassword(inputEmail, inputPassword).
+-                                addOnCompleteListener(activity) { task ->
+-                                    if (task.isSuccessful){
+-                                        onSuccessfulRegister()
+-                                    }else{
+-                                        registerError = when(task.isSuccessful){
+-                                            is FirebaseAuthInvalidCredentialsException -> "Correo invalido"
+-                                            is FirebaseAuthUserCollisionException -> "Correo ya registrado"
+-                                            else -> "Error al registrarse"
+-                                        }
+-                                    }
+-                                }*/
+-                        registerError = "Por favor verifica tu correo con Google para completar el registro."
+-                        val signInIntent = googleSignInClient.signInIntent
+-                        googleLauncher.launch(signInIntent)
++                        auth.createUserWithEmailAndPassword(inputEmail, inputPassword).
++                        addOnCompleteListener(activity) { task ->
++                            if (task.isSuccessful){
++                                onSuccessfulRegister()
++                            }else{
++                                registerError = when(task.isSuccessful){
++                                    is FirebaseAuthInvalidCredentialsException -> "Correo invalido"
++                                    is FirebaseAuthUserCollisionException -> "Correo ya registrado"
++                                    else -> "Error al registrarse"
++                                }
++                            }
++                        }
+                     }else{
+                         registerError = "Hubo un error en el register"
+                     }
+@@ -306,59 +266,6 @@
+             ) {
+                 Text(text = "Registro")
+             }
+-            Spacer(modifier = Modifier.height(12.dp))
+-            Row (
+-                modifier = Modifier
+-                    .fillMaxWidth()
+-                    .clickable {
+-                        val signInIntent = googleSignInClient.signInIntent
+-                        googleLauncher.launch(signInIntent)
+-                    }
+-                    .padding(10.dp),
+-                verticalAlignment = Alignment.CenterVertically,
+-                horizontalArrangement = Arrangement.Center
+-            ){
+-                Image(
+-                    painter = painterResource(id = R.drawable.ic_google),
+-                    contentDescription = "Registrar con Google",
+-                    modifier = Modifier
+-                        .padding(10.dp)
+-                        .size(40.dp)
+-                )
+-                Text(text = "Registrarse con Google", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+-            }
+         }
+     }
+ }
+-private fun handleGoogleRegister(
+-    account: GoogleSignInAccount?,
+-    auth: FirebaseAuth,
+-    onSuccess: () -> Unit,
+-    onError: (String) -> Unit
+-) {
+-    if (account == null) {
+-        onError("No se obtuvo la cuenta de Google.")
+-        return
+-    }
+-    try {
+-        val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+-        // Intentamos iniciar sesión con la credencial: si es nuevo usuario, Firebase lo crea automáticamente.
+-        auth.signInWithCredential(credential)
+-            .addOnCompleteListener { task ->
+-                if (task.isSuccessful) {
+-                    Log.d("RegisterScreen", "Registro con Google exitoso: ${account.email}")
+-                    onSuccess()
+-                } else {
+-                    Log.d("RegisterScreen", "Fallo auth con credencial Google: ${task.exception?.localizedMessage}")
+-                    onError("Error al registrarse con Google.")
+-                }
+-            }
+-            .addOnFailureListener {
+-                Log.d("RegisterScreen", "Exception en registro Google: ${it.localizedMessage}")
+-                onError("Fallo el registro con Google.")
+-            }
+-    } catch (ex: Exception) {
+-        Log.d("RegisterScreen", "Excepcion: ${ex.localizedMessage}")
+-        onError("Excepción al registrar con Google.")
+-    }
+-}
+\ No newline at end of file
+Index: .idea/.gitignore
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/.gitignore b/.idea/.gitignore
+deleted file mode 100644
+--- a/.idea/.gitignore	(revision f4fa49376c5546686b3e26b86ec851ff8434bbfc)
++++ /dev/null	(revision f4fa49376c5546686b3e26b86ec851ff8434bbfc)
+@@ -1,7 +0,0 @@
+-# Default ignored files
+-/shelf/
+-/workspace.xml
+-.idea/
+-*.iml
+-# Evitar subir configuración privada de Firebase
+-app/google-services.json
+Index: .idea/dictionaries/project.xml
+===================================================================
+diff --git a/.idea/dictionaries/project.xml b/.idea/dictionaries/project.xml
+deleted file mode 100644
+--- a/.idea/dictionaries/project.xml	(revision f4fa49376c5546686b3e26b86ec851ff8434bbfc)
++++ /dev/null	(revision f4fa49376c5546686b3e26b86ec851ff8434bbfc)
+@@ -1,7 +0,0 @@
+-<component name="ProjectDictionaryState">
+-  <dictionary name="project">
+-    <words>
+-      <w>smartkitchenassistant</w>
+-    </words>
+-  </dictionary>
+-</component>
+\ No newline at end of file
+Index: .idea/deviceManager.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/deviceManager.xml b/.idea/deviceManager.xml
+deleted file mode 100644
+--- a/.idea/deviceManager.xml	(revision f4fa49376c5546686b3e26b86ec851ff8434bbfc)
++++ /dev/null	(revision f4fa49376c5546686b3e26b86ec851ff8434bbfc)
+@@ -1,13 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<project version="4">
+-  <component name="DeviceTable">
+-    <option name="columnSorters">
+-      <list>
+-        <ColumnSorterState>
+-          <option name="column" value="Name" />
+-          <option name="order" value="ASCENDING" />
+-        </ColumnSorterState>
+-      </list>
+-    </option>
+-  </component>
+-</project>
+\ No newline at end of file
+Index: .idea/inspectionProfiles/Project_Default.xml
+===================================================================
+diff --git a/.idea/inspectionProfiles/Project_Default.xml b/.idea/inspectionProfiles/Project_Default.xml
+deleted file mode 100644
+--- a/.idea/inspectionProfiles/Project_Default.xml	(revision f4fa49376c5546686b3e26b86ec851ff8434bbfc)
++++ /dev/null	(revision f4fa49376c5546686b3e26b86ec851ff8434bbfc)
+@@ -1,61 +0,0 @@
+-<component name="InspectionProjectProfileManager">
+-  <profile version="1.0">
+-    <option name="myName" value="Project Default" />
+-    <inspection_tool class="ComposePreviewDimensionRespectsLimit" enabled="true" level="WARNING" enabled_by_default="true">
+-      <option name="composableFile" value="true" />
+-      <option name="previewFile" value="true" />
+-    </inspection_tool>
+-    <inspection_tool class="ComposePreviewMustBeTopLevelFunction" enabled="true" level="ERROR" enabled_by_default="true">
+-      <option name="composableFile" value="true" />
+-      <option name="previewFile" value="true" />
+-    </inspection_tool>
+-    <inspection_tool class="ComposePreviewNeedsComposableAnnotation" enabled="true" level="ERROR" enabled_by_default="true">
+-      <option name="composableFile" value="true" />
+-      <option name="previewFile" value="true" />
+-    </inspection_tool>
+-    <inspection_tool class="ComposePreviewNotSupportedInUnitTestFiles" enabled="true" level="ERROR" enabled_by_default="true">
+-      <option name="composableFile" value="true" />
+-      <option name="previewFile" value="true" />
+-    </inspection_tool>
+-    <inspection_tool class="GlancePreviewDimensionRespectsLimit" enabled="true" level="WARNING" enabled_by_default="true">
+-      <option name="composableFile" value="true" />
+-    </inspection_tool>
+-    <inspection_tool class="GlancePreviewMustBeTopLevelFunction" enabled="true" level="ERROR" enabled_by_default="true">
+-      <option name="composableFile" value="true" />
+-    </inspection_tool>
+-    <inspection_tool class="GlancePreviewNeedsComposableAnnotation" enabled="true" level="ERROR" enabled_by_default="true">
+-      <option name="composableFile" value="true" />
+-    </inspection_tool>
+-    <inspection_tool class="GlancePreviewNotSupportedInUnitTestFiles" enabled="true" level="ERROR" enabled_by_default="true">
+-      <option name="composableFile" value="true" />
+-    </inspection_tool>
+-    <inspection_tool class="PreviewAnnotationInFunctionWithParameters" enabled="true" level="ERROR" enabled_by_default="true">
+-      <option name="composableFile" value="true" />
+-      <option name="previewFile" value="true" />
+-    </inspection_tool>
+-    <inspection_tool class="PreviewApiLevelMustBeValid" enabled="true" level="ERROR" enabled_by_default="true">
+-      <option name="composableFile" value="true" />
+-      <option name="previewFile" value="true" />
+-    </inspection_tool>
+-    <inspection_tool class="PreviewDeviceShouldUseNewSpec" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+-      <option name="composableFile" value="true" />
+-      <option name="previewFile" value="true" />
+-    </inspection_tool>
+-    <inspection_tool class="PreviewFontScaleMustBeGreaterThanZero" enabled="true" level="ERROR" enabled_by_default="true">
+-      <option name="composableFile" value="true" />
+-      <option name="previewFile" value="true" />
+-    </inspection_tool>
+-    <inspection_tool class="PreviewMultipleParameterProviders" enabled="true" level="ERROR" enabled_by_default="true">
+-      <option name="composableFile" value="true" />
+-      <option name="previewFile" value="true" />
+-    </inspection_tool>
+-    <inspection_tool class="PreviewParameterProviderOnFirstParameter" enabled="true" level="ERROR" enabled_by_default="true">
+-      <option name="composableFile" value="true" />
+-      <option name="previewFile" value="true" />
+-    </inspection_tool>
+-    <inspection_tool class="PreviewPickerAnnotation" enabled="true" level="ERROR" enabled_by_default="true">
+-      <option name="composableFile" value="true" />
+-      <option name="previewFile" value="true" />
+-    </inspection_tool>
+-  </profile>
+-</component>
+\ No newline at end of file
+Index: gradle/libs.versions.toml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>[versions]\r\nagp = \"8.13.0\"\r\nfirebaseAuthVersion = \"23.0.0\"\r\nfirebaseBom = \"34.5.0\"\r\nhiltNavegationCompose = \"1.0.0\"\r\nkotlin = \"2.0.21\"\r\ncoreKtx = \"1.17.0\"\r\njunit = \"4.13.2\"\r\njunitVersion = \"1.3.0\"\r\nespressoCore = \"3.7.0\"\r\nlifecycleRuntimeKtx = \"2.9.4\"\r\nactivityCompose = \"1.11.0\"\r\ncomposeBom = \"2024.09.00\"\r\nnavigationCompose = \"2.9.5\"\r\nfirebaseAuth = \"24.0.1\"\r\nplayServicesAuth = \"21.4.0\"\r\nplayServicesAuthVersion = \"21.2.0\"\r\n\r\n[libraries]\r\nandroidx-core-ktx = { group = \"androidx.core\", name = \"core-ktx\", version.ref = \"coreKtx\" }\r\nandroidx-hilt-navegation-compose = { module = \"androidx.hilt:hilt-navegation-compose\", version.ref = \"hiltNavegationCompose\" }\r\nandroidx-navigation-compose = { module = \"androidx.navigation:navigation-compose\", version.ref = \"navigationCompose\" }\r\nfirebase-auth-v2300 = { module = \"com.google.firebase:firebase-auth\", version.ref = \"firebaseAuthVersion\" }\r\nfirebase-bom = { module = \"com.google.firebase:firebase-bom\", version.ref = \"firebaseBom\" }\r\njunit = { group = \"junit\", name = \"junit\", version.ref = \"junit\" }\r\nandroidx-junit = { group = \"androidx.test.ext\", name = \"junit\", version.ref = \"junitVersion\" }\r\nandroidx-espresso-core = { group = \"androidx.test.espresso\", name = \"espresso-core\", version.ref = \"espressoCore\" }\r\nandroidx-lifecycle-runtime-ktx = { group = \"androidx.lifecycle\", name = \"lifecycle-runtime-ktx\", version.ref = \"lifecycleRuntimeKtx\" }\r\nandroidx-activity-compose = { group = \"androidx.activity\", name = \"activity-compose\", version.ref = \"activityCompose\" }\r\nandroidx-compose-bom = { group = \"androidx.compose\", name = \"compose-bom\", version.ref = \"composeBom\" }\r\nandroidx-compose-ui = { group = \"androidx.compose.ui\", name = \"ui\" }\r\nandroidx-compose-ui-graphics = { group = \"androidx.compose.ui\", name = \"ui-graphics\" }\r\nandroidx-compose-ui-tooling = { group = \"androidx.compose.ui\", name = \"ui-tooling\" }\r\nandroidx-compose-ui-tooling-preview = { group = \"androidx.compose.ui\", name = \"ui-tooling-preview\" }\r\nandroidx-compose-ui-test-manifest = { group = \"androidx.compose.ui\", name = \"ui-test-manifest\" }\r\nandroidx-compose-ui-test-junit4 = { group = \"androidx.compose.ui\", name = \"ui-test-junit4\" }\r\nandroidx-compose-material3 = { group = \"androidx.compose.material3\", name = \"material3\" }\r\nfirebase-auth = { group = \"com.google.firebase\", name = \"firebase-auth\", version.ref = \"firebaseAuth\" }\r\nplay-services-auth = { module = \"com.google.android.gms:play-services-auth\", version.ref = \"playServicesAuth\" }\r\nplay-services-auth-v2120 = { module = \"com.google.android.gms:play-services-auth\", version.ref = \"playServicesAuthVersion\" }\r\n\r\n[plugins]\r\nandroid-application = { id = \"com.android.application\", version.ref = \"agp\" }\r\nkotlin-android = { id = \"org.jetbrains.kotlin.android\", version.ref = \"kotlin\" }\r\nkotlin-compose = { id = \"org.jetbrains.kotlin.plugin.compose\", version.ref = \"kotlin\" }\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/gradle/libs.versions.toml b/gradle/libs.versions.toml
+--- a/gradle/libs.versions.toml	(revision f4fa49376c5546686b3e26b86ec851ff8434bbfc)
++++ b/gradle/libs.versions.toml	(date 1763003730592)
+@@ -1,5 +1,5 @@
+ [versions]
+-agp = "8.13.0"
++agp = "8.13.1"
+ firebaseAuthVersion = "23.0.0"
+ firebaseBom = "34.5.0"
+ hiltNavegationCompose = "1.0.0"
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"ExternalStorageConfigurationManager\" enabled=\"true\" />\r\n<<<<<<< HEAD\r\n=======\r\n  <component name=\"ProjectRootManager\" version=\"2\" languageLevel=\"JDK_21\" default=\"true\" project-jdk-name=\"jbr-21\" project-jdk-type=\"JavaSDK\">\r\n    <output url=\"file://$PROJECT_DIR$/build/classes\" />\r\n  </component>\r\n  <component name=\"ProjectType\">\r\n    <option name=\"id\" value=\"Android\" />\r\n  </component>\r\n>>>>>>> origin/login\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+--- a/.idea/misc.xml	(revision f4fa49376c5546686b3e26b86ec851ff8434bbfc)
++++ b/.idea/misc.xml	(date 1763003708917)
+@@ -1,13 +1,10 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+   <component name="ExternalStorageConfigurationManager" enabled="true" />
+-<<<<<<< HEAD
+-=======
+   <component name="ProjectRootManager" version="2" languageLevel="JDK_21" default="true" project-jdk-name="jbr-21" project-jdk-type="JavaSDK">
+     <output url="file://$PROJECT_DIR$/build/classes" />
+   </component>
+   <component name="ProjectType">
+     <option name="id" value="Android" />
+   </component>
+->>>>>>> origin/login
+ </project>
+\ No newline at end of file
+Index: .idea/gradle.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"GradleMigrationSettings\" migrationVersion=\"1\" />\r\n  <component name=\"GradleSettings\">\r\n    <option name=\"linkedExternalProjectsSettings\">\r\n      <GradleProjectSettings>\r\n        <option name=\"testRunner\" value=\"CHOOSE_PER_TEST\" />\r\n        <option name=\"externalProjectPath\" value=\"$PROJECT_DIR$\" />\r\n        <option name=\"gradleJvm\" value=\"#GRADLE_LOCAL_JAVA_HOME\" />\r\n        <option name=\"modules\">\r\n          <set>\r\n            <option value=\"$PROJECT_DIR$\" />\r\n            <option value=\"$PROJECT_DIR$/app\" />\r\n          </set>\r\n        </option>\r\n      </GradleProjectSettings>\r\n    </option>\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/gradle.xml b/.idea/gradle.xml
+--- a/.idea/gradle.xml	(revision f4fa49376c5546686b3e26b86ec851ff8434bbfc)
++++ b/.idea/gradle.xml	(date 1763003708938)
+@@ -1,6 +1,5 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+-  <component name="GradleMigrationSettings" migrationVersion="1" />
+   <component name="GradleSettings">
+     <option name="linkedExternalProjectsSettings">
+       <GradleProjectSettings>
+Index: .idea/vcs.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"VcsDirectoryMappings\">\r\n    <mapping directory=\"$PROJECT_DIR$\" vcs=\"Git\" />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/vcs.xml b/.idea/vcs.xml
+--- a/.idea/vcs.xml	(revision f4fa49376c5546686b3e26b86ec851ff8434bbfc)
++++ b/.idea/vcs.xml	(date 1763003708980)
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+   <component name="VcsDirectoryMappings">
+-    <mapping directory="$PROJECT_DIR$" vcs="Git" />
++    <mapping directory="" vcs="Git" />
+   </component>
+ </project>
+\ No newline at end of file
+Index: app/src/main/java/com/example/smartkitchenassistant/Validations.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.smartkitchenassistant\r\n\r\nimport android.R\r\nimport android.util.Patterns\r\nimport org.intellij.lang.annotations.Pattern\r\n\r\n//returnar un true si es valido y un false si no es valido\r\n//tambien retorne una cadena que diga que pasa si no es valido\r\n\r\nfun validateEmail(email: String): Pair<Boolean, String>{\r\n    return when{\r\n        email.isEmpty() -> Pair(false, \"El correo es requerido.\")\r\n        !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> Pair(false, \"El correo es invalido\")\r\n        !email.endsWith(\"@gmail.com\")-> Pair(false, \"Ese email no es corporativo.\")\r\n        else -> Pair (true, \"\")\r\n    }\r\n}\r\n\r\nfun validatePassword(password:String): Pair<Boolean, String>{\r\n    return  when{\r\n        password.isEmpty() -> Pair(false, \"La contraseña es requerida.\")\r\n        password.length < 8 -> Pair(false, \"La contraseña debe tener al menos 8 caracteres\")\r\n        !password.any{it.isDigit()} -> Pair(false, \"La contraseña debe tener al menos un número\")\r\n        else -> Pair(true, \"\")\r\n    }\r\n}\r\n\r\nfun validateName(name: String): Pair<Boolean, String>{\r\n    return when{\r\n        name.isEmpty() -> Pair(false, \"El nombre es requerido.\")\r\n        name.length < 3 -> Pair(false, \"El nombre debe tener al menos 3 caracteres.\")\r\n        else -> Pair(true, \"\")\r\n    }\r\n}\r\n\r\nfun validateConfirmPassword(password: String, confirmPassword: String): Pair<Boolean, String>{\r\n    return when{\r\n        confirmPassword.isEmpty() -> Pair(false, \"La contraseña es requerida.\")\r\n        confirmPassword != password -> Pair(false, \"Las contraseñas no coinciden.\")\r\n        else -> Pair(true, \"\")\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/smartkitchenassistant/Validations.kt b/app/src/main/java/com/example/smartkitchenassistant/Validations.kt
+--- a/app/src/main/java/com/example/smartkitchenassistant/Validations.kt	(revision f4fa49376c5546686b3e26b86ec851ff8434bbfc)
++++ b/app/src/main/java/com/example/smartkitchenassistant/Validations.kt	(date 1762999772978)
+@@ -1,8 +1,6 @@
+ package com.example.smartkitchenassistant
+ 
+-import android.R
+ import android.util.Patterns
+-import org.intellij.lang.annotations.Pattern
+ 
+ //returnar un true si es valido y un false si no es valido
+ //tambien retorne una cadena que diga que pasa si no es valido
+Index: app/src/main/java/com/example/smartkitchenassistant/NavegationApp.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.smartkitchenassistant\r\n\r\nimport androidx.compose.runtime.Composable\r\nimport androidx.navigation.compose.composable\r\nimport androidx.navigation.compose.NavHost\r\nimport androidx.navigation.compose.rememberNavController\r\nimport com.google.firebase.Firebase\r\nimport com.google.firebase.auth.auth\r\n\r\n@Composable\r\nfun NavigationApp(){\r\n    val myNavController = rememberNavController()\r\n    var myStartDestination: String = \"login\"\r\n\r\n    val auth = Firebase.auth\r\n    val currentUser = auth.currentUser\r\n\r\n    if (currentUser != null){\r\n        myStartDestination = \"home\"\r\n    }else{\r\n        myStartDestination = \"login\"\r\n    }\r\n\r\n    NavHost(\r\n        navController = myNavController,\r\n        startDestination = myStartDestination\r\n    ){\r\n        composable(\"login\") {\r\n            loginScreen(onClickRegister = {\r\n                myNavController.navigate(\"register\")\r\n            }, onSuccessfulLogin = {\r\n                myNavController.navigate(\"home\"){\r\n                    popUpTo(\"login\"){inclusive = true}\r\n                }\r\n            })\r\n        }\r\n        composable(\"register\") {\r\n            RegisterScreen(onClickBack = {\r\n                myNavController.popBackStack()\r\n            }, onSuccessfulRegister = {\r\n                myNavController.navigate(\"home\"){\r\n                    popUpTo(0)\r\n                }\r\n            })\r\n        }\r\n        composable(\"home\"){\r\n            HomeScreen(onClickLogout = {\r\n                myNavController.navigate(\"login\"){\r\n                    popUpTo(0)\r\n                }\r\n            })\r\n        }\r\n    }\r\n\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/smartkitchenassistant/NavegationApp.kt b/app/src/main/java/com/example/smartkitchenassistant/NavegationApp.kt
+--- a/app/src/main/java/com/example/smartkitchenassistant/NavegationApp.kt	(revision f4fa49376c5546686b3e26b86ec851ff8434bbfc)
++++ b/app/src/main/java/com/example/smartkitchenassistant/NavegationApp.kt	(date 1763000027347)
+@@ -1,55 +1,54 @@
+ package com.example.smartkitchenassistant
+ 
+ import androidx.compose.runtime.Composable
+-import androidx.navigation.compose.composable
+ import androidx.navigation.compose.NavHost
++import androidx.navigation.compose.composable
+ import androidx.navigation.compose.rememberNavController
+ import com.google.firebase.Firebase
+ import com.google.firebase.auth.auth
+ 
+ @Composable
+-fun NavigationApp(){
++fun NavigationApp() {
+     val myNavController = rememberNavController()
+-    var myStartDestination: String = "login"
+-
+     val auth = Firebase.auth
+     val currentUser = auth.currentUser
+ 
+-    if (currentUser != null){
+-        myStartDestination = "home"
+-    }else{
+-        myStartDestination = "login"
+-    }
++    val myStartDestination = if (currentUser != null) "home" else "login"
+ 
+     NavHost(
+         navController = myNavController,
+         startDestination = myStartDestination
+-    ){
++    ) {
+         composable("login") {
+-            loginScreen(onClickRegister = {
+-                myNavController.navigate("register")
+-            }, onSuccessfulLogin = {
+-                myNavController.navigate("home"){
+-                    popUpTo("login"){inclusive = true}
++            loginScreen(
++                onClickRegister = {
++                    myNavController.navigate("register")
++                },
++                onSuccessfulLogin = {
++                    myNavController.navigate("home") {
++                        popUpTo("login") { inclusive = true }
++                    }
+                 }
+-            })
++            )
+         }
+         composable("register") {
+-            RegisterScreen(onClickBack = {
+-                myNavController.popBackStack()
+-            }, onSuccessfulRegister = {
+-                myNavController.navigate("home"){
+-                    popUpTo(0)
++            RegisterScreen(
++                onClickBack = { myNavController.popBackStack() },
++                onSuccessfulRegister = {
++                    myNavController.navigate("home") {
++                        popUpTo(0)
++                    }
+                 }
+-            })
++            )
+         }
+-        composable("home"){
+-            HomeScreen(onClickLogout = {
+-                myNavController.navigate("login"){
+-                    popUpTo(0)
++        composable("home") {
++            HomeScreen(
++                onClickLogout = {
++                    myNavController.navigate("login") {
++                        popUpTo(0)
++                    }
+                 }
+-            })
++            )
+         }
+     }
+-
+ }

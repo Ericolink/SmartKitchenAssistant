@@ -4,10 +4,12 @@ import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -18,13 +20,18 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CardElevation
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +51,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.auth
+import kotlinx.coroutines.delay
 
 @Composable
 fun loginScreen(onClickRegister : ()-> Unit = {}, onSuccessfulLogin : ()-> Unit = {}){
@@ -65,6 +73,17 @@ fun loginScreen(onClickRegister : ()-> Unit = {}, onSuccessfulLogin : ()-> Unit 
         mutableStateOf("")
     }
     var passwordError by remember {
+        mutableStateOf("")
+    }
+
+    //Recuperación de la contraseña
+    var showResetDialog by remember {
+        mutableStateOf(false)
+    }
+    var resetEmail by remember {
+        mutableStateOf("")
+    }
+    var resetMessage by remember {
         mutableStateOf("")
     }
 
@@ -193,9 +212,83 @@ fun loginScreen(onClickRegister : ()-> Unit = {}, onSuccessfulLogin : ()-> Unit 
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            TextButton(onClick = { /* recuperación de contraseña futura */ }) {
+            TextButton(onClick = { showResetDialog = true}) {
                 Text(text = "Olvidé mi contraseña")
             }
+        }
+
+        if (resetMessage.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(24.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD)),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = resetMessage,
+                        color = Color(0xFF1565C0),
+                        fontSize = 15.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Hemos enviado un correo de recuperación. Revisa tu bandeja y vuelve a intentar iniciar sesión.",
+                        color = Color.Gray,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+        }
+    }
+
+        if (showResetDialog) {
+            AlertDialog(
+                onDismissRequest = { showResetDialog = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        if (resetEmail.isNotEmpty()) {
+                            auth.sendPasswordResetEmail(resetEmail)
+                                .addOnCompleteListener { task ->
+                                    resetMessage = if (task.isSuccessful) {
+                                        "Se ha enviado un correo para restablecer tu contraseña."
+                                    } else {
+                                        "No se pudo enviar el correo. Verifica la dirección."
+                                    }
+                                    showResetDialog = false
+                                }
+                        } else {
+                            resetMessage = "Por favor, ingresa tu correo electrónico."
+                            showResetDialog = false
+                        }
+                    }) {
+                        Text("Enviar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showResetDialog = false }) {
+                        Text("Cancelar")
+                    }
+                },
+                title = { Text("Recuperar contraseña") },
+                text = {
+                    Column {
+                        OutlinedTextField(
+                            value = resetEmail,
+                            onValueChange = { resetEmail = it },
+                            label = { Text("Correo electrónico") },
+                            singleLine = true
+                        )
+                    }
+                }
+            )
+        }
+    if (resetMessage.isNotEmpty()) {
+        LaunchedEffect(resetMessage) {
+            delay(6000)
+            resetMessage = ""
         }
     }
 }
