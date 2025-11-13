@@ -1,7 +1,6 @@
 package com.example.smartkitchenassistant
 
 import android.app.Activity
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,7 +14,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
@@ -85,6 +83,10 @@ fun RegisterScreen (onClickBack : ()-> Unit = {}, onSuccessfulRegister : ()-> Un
         mutableStateOf("")
     }
 
+    var successMessage by remember {
+        mutableStateOf("")
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -121,7 +123,7 @@ fun RegisterScreen (onClickBack : ()-> Unit = {}, onSuccessfulRegister : ()-> Un
                 text = "Registro",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
-                color = androidx.compose.ui.graphics.Color(0xFFFF9800) // Naranja
+                color = Color(0xFFFF9800) // Naranja
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -225,6 +227,9 @@ fun RegisterScreen (onClickBack : ()-> Unit = {}, onSuccessfulRegister : ()-> Un
             if (registerError.isNotEmpty()){
                 Text(registerError, color = Color.Red)
             }
+            if (successMessage.isNotEmpty()){
+                Text(successMessage, color = Color(0xFF4CAF50))
+            }
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -244,19 +249,29 @@ fun RegisterScreen (onClickBack : ()-> Unit = {}, onSuccessfulRegister : ()-> Un
 
                     if (isValidName && isValidEmail && isValidPassword && isValidConfirmPassword){
                         auth.createUserWithEmailAndPassword(inputEmail, inputPassword).
-                                addOnCompleteListener(activity) { task ->
-                                    if (task.isSuccessful){
-                                        onSuccessfulRegister()
-                                    }else{
-                                        registerError = when(task.isSuccessful){
-                                            is FirebaseAuthInvalidCredentialsException -> "Correo invalido"
-                                            is FirebaseAuthUserCollisionException -> "Correo ya registrado"
-                                            else -> "Error al registrarse"
-                                        }
+                        addOnCompleteListener(activity) { task ->
+                            if (task.isSuccessful) {
+                                val user = auth.currentUser
+                                user?.sendEmailVerification()?.addOnCompleteListener { verifyTask ->
+                                    if (verifyTask.isSuccessful) {
+                                        successMessage =
+                                            "Registro exitoso. Revisa tu correo para verificar tu cuenta antes de iniciar sesión."
+                                        auth.signOut()
+                                    } else {
+                                        registerError =
+                                            "Error al enviar el correo de verificación. Intenta nuevamente."
                                     }
                                 }
-                    }else{
-                        registerError = "Hubo un error en el register"
+                            } else {
+                                registerError = when (task.exception) {
+                                    is FirebaseAuthInvalidCredentialsException -> "Correo inválido"
+                                    is FirebaseAuthUserCollisionException -> "Correo ya registrado"
+                                    else -> "Error al registrarse"
+                                }
+                            }
+                        }
+                    } else {
+                        registerError = "Por favor, completa correctamente todos los campos."
                     }
 
                 },
@@ -264,7 +279,7 @@ fun RegisterScreen (onClickBack : ()-> Unit = {}, onSuccessfulRegister : ()-> Un
                     .fillMaxWidth()
                     .height(50.dp)
             ) {
-                Text(text = "Registro")
+                Text(text = "Registrarse")
             }
         }
     }

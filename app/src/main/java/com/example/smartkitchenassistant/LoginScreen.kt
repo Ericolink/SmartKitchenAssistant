@@ -1,9 +1,10 @@
-package com.example.smartkitchenassistant.ui.theme
+package com.example.smartkitchenassistant
 
 import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -19,13 +20,18 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CardElevation
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,13 +47,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.smartkitchenassistant.R
-import com.example.smartkitchenassistant.validateEmail
-import com.example.smartkitchenassistant.validatePassword
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.auth
+import kotlinx.coroutines.delay
 
 @Composable
 fun loginScreen(onClickRegister : ()-> Unit = {}, onSuccessfulLogin : ()-> Unit = {}){
@@ -69,6 +73,17 @@ fun loginScreen(onClickRegister : ()-> Unit = {}, onSuccessfulLogin : ()-> Unit 
         mutableStateOf("")
     }
     var passwordError by remember {
+        mutableStateOf("")
+    }
+
+    //Recuperación de la contraseña
+    var showResetDialog by remember {
+        mutableStateOf(false)
+    }
+    var resetEmail by remember {
+        mutableStateOf("")
+    }
+    var resetMessage by remember {
         mutableStateOf("")
     }
 
@@ -161,47 +176,119 @@ fun loginScreen(onClickRegister : ()-> Unit = {}, onSuccessfulLogin : ()-> Unit 
             }
 
             Button(onClick = {
-
-                val isValidEmail: Boolean = validateEmail(inputEmail).first
+                val isValidEmail = validateEmail(inputEmail).first
                 val isValidPassword = validatePassword(inputPassword).first
-
                 emailError = validateEmail(inputEmail).second
                 passwordError = validatePassword(inputPassword).second
 
-                if (isValidEmail && isValidPassword){
+                if (isValidEmail && isValidPassword) {
                     auth.signInWithEmailAndPassword(inputEmail, inputPassword)
                         .addOnCompleteListener(activity) { task ->
                             if (task.isSuccessful) {
-                                onSuccessfulLogin()
+                                val user = auth.currentUser
+                                if (user != null && user.isEmailVerified) {
+                                    onSuccessfulLogin()
+                                } else {
+                                    loginError = "Debes verificar tu correo antes de iniciar sesión."
+                                    auth.signOut()
+                                }
                             } else {
-                                loginError = when(task.exception){
+                                loginError = when (task.exception) {
                                     is FirebaseAuthInvalidCredentialsException -> "Correo o contraseña incorrecta"
                                     is FirebaseAuthInvalidUserException -> "No existe una cuenta con este correo"
                                     else -> "Error al iniciar sesión. Intenta de nuevo"
                                 }
                             }
                         }
-                }else {
-
                 }
-
             }) {
-                Text(text = "Iniciar Sesion")
+                Text(text = "Iniciar Sesión")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+
             TextButton(onClick = onClickRegister) {
-                Text("¿No tienes una cuenta? Registrate")
+                Text("¿No tienes una cuenta? Regístrate")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            TextButton(onClick = { }) {
-                Text(text = "Olvide mi contraseña", modifier = Modifier.clickable {
-
-                })
+            TextButton(onClick = { showResetDialog = true}) {
+                Text(text = "Olvidé mi contraseña")
             }
+        }
 
+        if (resetMessage.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(24.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD)),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = resetMessage,
+                        color = Color(0xFF1565C0),
+                        fontSize = 15.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Hemos enviado un correo de recuperación. Revisa tu bandeja y vuelve a intentar iniciar sesión.",
+                        color = Color.Gray,
+                        fontSize = 13.sp
+                    )
+                }
+            }
         }
     }
 
+    if (showResetDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetDialog = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (resetEmail.isNotEmpty()) {
+                        auth.sendPasswordResetEmail(resetEmail)
+                            .addOnCompleteListener { task ->
+                                resetMessage = if (task.isSuccessful) {
+                                    "Se ha enviado un correo para restablecer tu contraseña."
+                                } else {
+                                    "No se pudo enviar el correo. Verifica la dirección."
+                                }
+                                showResetDialog = false
+                            }
+                    } else {
+                        resetMessage = "Por favor, ingresa tu correo electrónico."
+                        showResetDialog = false
+                    }
+                }) {
+                    Text("Enviar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetDialog = false }) {
+                    Text("Cancelar")
+                }
+            },
+            title = { Text("Recuperar contraseña") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = resetEmail,
+                        onValueChange = { resetEmail = it },
+                        label = { Text("Correo electrónico") },
+                        singleLine = true
+                    )
+                }
+            }
+        )
+    }
+    if (resetMessage.isNotEmpty()) {
+        LaunchedEffect(resetMessage) {
+            delay(6000)
+            resetMessage = ""
+        }
+    }
 }
