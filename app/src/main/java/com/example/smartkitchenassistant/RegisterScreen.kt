@@ -135,7 +135,7 @@ fun RegisterScreen (onClickBack : ()-> Unit = {}, onSuccessfulRegister : ()-> Un
             OutlinedTextField(
                 value = inputName,
                 onValueChange = { inputName = it },
-                label = { Text("Nombre") },
+                label = { Text("Nombre de Usuario") },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Person,
@@ -260,7 +260,7 @@ fun RegisterScreen (onClickBack : ()-> Unit = {}, onSuccessfulRegister : ()-> Un
 
                                 if (uid != null) {
                                     val userData = hashMapOf(
-                                        "nombre" to inputName,
+                                        "nombreUsuario" to inputName,
                                         "correo" to inputEmail,
                                         "fechaRegistro" to com.google.firebase.firestore.FieldValue.serverTimestamp()
                                     )
