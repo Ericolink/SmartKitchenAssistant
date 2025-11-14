@@ -43,6 +43,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.firestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,6 +51,8 @@ fun RegisterScreen (onClickBack : ()-> Unit = {}, onSuccessfulRegister : ()-> Un
 
     val auth = Firebase.auth
     val activity = LocalView.current.context as Activity
+
+    val db = Firebase.firestore
 
     //ESTADOS DE LOS IMPUT
 
@@ -251,7 +254,27 @@ fun RegisterScreen (onClickBack : ()-> Unit = {}, onSuccessfulRegister : ()-> Un
                         auth.createUserWithEmailAndPassword(inputEmail, inputPassword).
                         addOnCompleteListener(activity) { task ->
                             if (task.isSuccessful) {
+
                                 val user = auth.currentUser
+                                val uid = user?.uid
+
+                                if (uid != null) {
+                                    val userData = hashMapOf(
+                                        "nombre" to inputName,
+                                        "correo" to inputEmail,
+                                        "fechaRegistro" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                                    )
+                                    db.collection("usuarios")
+                                        .document(uid)
+                                        .set(userData)
+                                        .addOnSuccessListener {
+                                            // Guardado correctamente
+                                        }
+                                        .addOnFailureListener {
+                                            // Falló el guardado
+                                        }
+                                }
+
                                 user?.sendEmailVerification()?.addOnCompleteListener { verifyTask ->
                                     if (verifyTask.isSuccessful) {
                                         successMessage =
