@@ -1,0 +1,7 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+.idea/
+*.iml
+# Evitar subir configuración privada de Firebase
+app/google-services.json
