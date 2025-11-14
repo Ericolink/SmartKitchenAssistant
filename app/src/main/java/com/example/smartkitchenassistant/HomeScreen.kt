@@ -1,5 +1,6 @@
 package com.example.smartkitchenassistant
 
+import BuscarRecetasScreen
 import android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,8 +24,6 @@ import androidx.compose.ui.unit.sp
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.example.smartkitchenassistant.screens.*
-import com.example.smartkitchenassistant.screens.buscar.BuscarRecetasScreen
-import com.google.firebase.firestore.firestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,7 +54,7 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
 
     val tabs = listOf(
         BottomNavItem("Buscar", Icons.Default.Search),
-        BottomNavItem("Ingredientes", Icons.Default.Favorite),
+        BottomNavItem("Favoritas", Icons.Default.Favorite),
         BottomNavItem("Despensa", Icons.AutoMirrored.Filled.List),
         BottomNavItem("Recomendaciones", Icons.Default.Star),
         BottomNavItem("Perfil", Icons.Default.Person)
@@ -152,7 +151,7 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
         ) {
             when (selectedTab) {
                 0 -> BuscarRecetasScreen()
-                1 -> AgregarIngredientesScreen()
+                1 -> FavoritosScreen()
                 2 -> MiDespensaScreen()
                 3 -> RecomendacionesScreen()
                 4 -> MiPerfilScreen()
