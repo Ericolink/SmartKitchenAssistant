@@ -44,10 +44,9 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
         user?.uid?.let { uid ->
             db.collection("usuarios")
                 .document(uid)
-                .get()
-                .addOnSuccessListener { document ->
-                    if (document.exists()) {
-                        userName = document.getString("nombre")
+                .addSnapshotListener { snapshot, _ ->
+                    if (snapshot != null && snapshot.exists()) {
+                        userName = snapshot.getString("nombreUsuario")
                     }
                 }
         }
