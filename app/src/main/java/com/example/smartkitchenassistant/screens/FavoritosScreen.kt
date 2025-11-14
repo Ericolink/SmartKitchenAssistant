@@ -33,20 +33,69 @@ fun FavoritosScreen() {
         mutableStateOf(
             listOf(
                 FavoritoUI(
-                    id = "1",
-                    nombre = "Tacos al Pastor",
-                    categoria = "Mexicana",
-                    imagen = "https://i.imgur.com/8Km9tLL.jpg"
+                    id = "52772",
+                    nombre = "Teriyaki Chicken Casserole",
+                    categoria = "Japanese",
+                    imagen = "https://www.themealdb.com/images/media/meals/wvpsxx1468256321.jpg"
                 ),
                 FavoritoUI(
-                    id = "2",
-                    nombre = "Spaghetti Bolognesa",
-                    categoria = "Italiana",
-                    imagen = "https://i.imgur.com/bc9G1A8.jpg"
+                    id = "52959",
+                    nombre = "Baked salmon with fennel & tomatoes",
+                    categoria = "British",
+                    imagen = "https://www.themealdb.com/images/media/meals/1548772327.jpg"
+                ),
+                FavoritoUI(
+                    id = "52802",
+                    nombre = "Fish pie",
+                    categoria = "British",
+                    imagen = "https://www.themealdb.com/images/media/meals/ysxwuq1487323065.jpg"
+                ),
+                FavoritoUI(
+                    id = "52844",
+                    nombre = "Lasagne",
+                    categoria = "Italian",
+                    imagen = "https://www.themealdb.com/images/media/meals/wtsvxx1511296896.jpg"
+                ),
+                FavoritoUI(
+                    id = "53013",
+                    nombre = "Apam balik",
+                    categoria = "Malaysian",
+                    imagen = "https://www.themealdb.com/images/media/meals/adxcbq1619787919.jpg"
+                ),
+                FavoritoUI(
+                    id = "52893",
+                    nombre = "Bigos (Hunters Stew)",
+                    categoria = "Polish",
+                    imagen = "https://www.themealdb.com/images/media/meals/rlwcc51598734603.jpg"
+                ),
+                FavoritoUI(
+                    id = "52944",
+                    nombre = "Escovitch Fish",
+                    categoria = "Jamaican",
+                    imagen = "https://www.themealdb.com/images/media/meals/1520084413.jpg"
+                ),
+                FavoritoUI(
+                    id = "52819",
+                    nombre = "Cajun spiced fish tacos",
+                    categoria = "Mexican",
+                    imagen = "https://www.themealdb.com/images/media/meals/uvuyxu1503067369.jpg"
+                ),
+                FavoritoUI(
+                    id = "52931",
+                    nombre = "Sugar Pie",
+                    categoria = "Canadian",
+                    imagen = "https://www.themealdb.com/images/media/meals/yrstur1511816605.jpg"
+                ),
+                FavoritoUI(
+                    id = "52773",
+                    nombre = "Honey Teriyaki Salmon",
+                    categoria = "Japanese",
+                    imagen = "https://www.themealdb.com/images/media/meals/xxyupu1468262513.jpg"
                 )
             )
         )
     }
+
 
     Column(
         modifier = Modifier
