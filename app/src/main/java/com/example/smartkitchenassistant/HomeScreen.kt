@@ -1,7 +1,6 @@
 package com.example.smartkitchenassistant
 
 import BuscarRecetasScreen
-import android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -24,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.example.smartkitchenassistant.screens.*
+import com.example.smartkitchenassistant.screens.despensa.DespensaScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -152,7 +152,7 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
             when (selectedTab) {
                 0 -> BuscarRecetasScreen()
                 1 -> FavoritosScreen()
-                2 -> MiDespensaScreen()
+                2 -> DespensaScreen()
                 3 -> RecomendacionesScreen()
                 4 -> MiPerfilScreen()
             }
