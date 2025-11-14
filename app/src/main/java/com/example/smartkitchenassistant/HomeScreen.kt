@@ -1,5 +1,6 @@
 package com.example.smartkitchenassistant
 
+import android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -23,6 +24,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.example.smartkitchenassistant.screens.*
 import com.example.smartkitchenassistant.screens.buscar.BuscarRecetasScreen
+import com.google.firebase.firestore.firestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,7 +32,26 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
     val auth = Firebase.auth
     val user = auth.currentUser
 
+    var userName by remember {
+        mutableStateOf<String?>(null)
+    }
+
     var selectedTab by remember { mutableIntStateOf(0) }
+
+    val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+
+    LaunchedEffect(user?.uid) {
+        user?.uid?.let { uid ->
+            db.collection("usuarios")
+                .document(uid)
+                .get()
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        userName = document.getString("nombre")
+                    }
+                }
+        }
+    }
 
     val tabs = listOf(
         BottomNavItem("Buscar", Icons.Default.Search),
@@ -45,7 +66,7 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
             TopAppBar(
                 title = {
                     Text(
-                        text = user?.email ?: "invitado",
+                        text = userName ?: user?.email ?: "invitado",
                         fontSize = 18.sp
                     )
                 },
