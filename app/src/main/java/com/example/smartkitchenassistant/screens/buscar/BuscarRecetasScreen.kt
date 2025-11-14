@@ -1,13 +1,14 @@
-package com.example.smartkitchenassistant.screens.buscar
-
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -20,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
+import com.example.smartkitchenassistant.screens.buscar.BuscarRecetasViewModel
 
 @Composable
 fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
@@ -32,6 +34,9 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
 
     var query by remember { mutableStateOf(TextFieldValue("")) }
     val meals by viewModel.meals.collectAsState()
+
+    // Estado local para favoritos
+    val favoritos = remember { mutableStateListOf<String>() }
 
     Column(
         modifier = Modifier
@@ -89,9 +94,10 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
                         .background(Secundario)
-                        .clickable { }
-                        .padding(12.dp)
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Imagen de la receta
                     Image(
                         painter = rememberAsyncImagePainter(meal.strMealThumb),
                         contentDescription = meal.strMeal,
@@ -102,8 +108,9 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
 
                     Spacer(modifier = Modifier.width(12.dp))
 
+                    // Info de la receta
                     Column(
-                        modifier = Modifier.align(Alignment.CenterVertically)
+                        modifier = Modifier.weight(1f)
                     ) {
                         Text(
                             text = meal.strMeal,
@@ -114,6 +121,32 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
                             text = meal.strCategory ?: "",
                             style = MaterialTheme.typography.bodySmall,
                             color = naranja
+                        )
+                    }
+
+                    // Botón de reproducir
+                    IconButton(
+                        onClick = {}
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = "Reproducir receta",
+                            tint = naranja
+                        )
+                    }
+
+                    // Botón de favorito
+                    val esFavorito = favoritos.contains(meal.idMeal)
+                    IconButton(
+                        onClick = {
+                            if (esFavorito) favoritos.remove(meal.idMeal)
+                            else favoritos.add(meal.idMeal)
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (esFavorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Favorito",
+                            tint = if (esFavorito) Color.Red else verde
                         )
                     }
                 }
