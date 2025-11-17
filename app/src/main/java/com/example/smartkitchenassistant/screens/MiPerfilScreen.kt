@@ -1,5 +1,8 @@
 package com.example.smartkitchenassistant.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,6 +22,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
+import com.cloudinary.android.MediaManager
+import com.cloudinary.android.callback.ErrorInfo
+import com.cloudinary.android.callback.UploadCallback
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -26,7 +32,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MiPerfilScreen() {
-
     val auth = Firebase.auth
     val user = auth.currentUser
     val db = FirebaseFirestore.getInstance()
@@ -38,9 +43,35 @@ fun MiPerfilScreen() {
     var telefono by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
     var fotoPerfilUrl by remember { mutableStateOf<String?>(null) }
-
     var mensajeGuardado by remember { mutableStateOf("") }
     var modoEdicion by remember { mutableStateOf(false) }
+    var cargando by remember { mutableStateOf(false) }
+
+    // 👉 Launcher para seleccionar imagen
+    val launcherGaleria = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            cargando = true
+            subirImagenCloudinary(uri) { url ->
+                if (url != null) {
+                    fotoPerfilUrl = url
+
+                    // 👉 Guardamos AUTOMÁTICAMENTE en Firestore
+                    user?.uid?.let { uid ->
+                        db.collection("usuarios").document(uid)
+                            .update("fotoPerfilUrl", url)
+                            .addOnSuccessListener {
+                                mensajeGuardado = "Foto actualizada ✔"
+                            }
+                    }
+                } else {
+                    mensajeGuardado = "Error al subir la imagen"
+                }
+                cargando = false
+            }
+        }
+    }
 
     // 👉 Cargar datos al entrar
     LaunchedEffect(user?.uid) {
@@ -66,17 +97,14 @@ fun MiPerfilScreen() {
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
         // 👉 FOTO DE PERFIL
         Box(
             modifier = Modifier
                 .size(130.dp)
                 .clip(CircleShape)
-                .background(Color(0xFFE0E0E0))
-                .clickable { /* cambiar foto más adelante */ },
+                .background(Color(0xFFE0E0E0)),
             contentAlignment = Alignment.Center
         ) {
-
             if (fotoPerfilUrl != null) {
                 Image(
                     painter = rememberAsyncImagePainter(fotoPerfilUrl),
@@ -89,6 +117,48 @@ fun MiPerfilScreen() {
             }
         }
 
+        Spacer(modifier = Modifier.height(15.dp))
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+
+            // 👉 BOTÓN SUBIR FOTO
+            OutlinedButton(
+                onClick = { launcherGaleria.launch("image/*") }
+            ) {
+                Text("Subir foto")
+            }
+
+            // 👉 BOTÓN ACTUALIZAR FOTO
+            OutlinedButton(
+                onClick = { launcherGaleria.launch("image/*") }
+            ) {
+                Text("Actualizar")
+            }
+
+            // 👉 BOTÓN ELIMINAR FOTO
+            OutlinedButton(
+                onClick = {
+                    fotoPerfilUrl = null
+
+                    user?.uid?.let { uid ->
+                        db.collection("usuarios")
+                            .document(uid)
+                            .update("fotoPerfilUrl", null)
+                        mensajeGuardado = "Foto eliminada ✔"
+                    }
+                }
+            ) {
+                Text("Eliminar")
+            }
+        }
+
+        if (cargando) {
+            Spacer(modifier = Modifier.height(10.dp))
+            CircularProgressIndicator()
+        }
+
         Spacer(modifier = Modifier.height(20.dp))
 
         // 👉 TARJETA PROFESIONAL DE PERFIL
@@ -99,17 +169,14 @@ fun MiPerfilScreen() {
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-
                 Text(
                     "Información del Perfil",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF333333)
                 )
-
                 Spacer(modifier = Modifier.height(15.dp))
 
-                // 👉 Mostrar datos o campos editables
                 if (!modoEdicion) {
                     // MODO LECTURA
                     PerfilDatoItem("Nombre de usuario", nombreUsuario)
@@ -126,7 +193,6 @@ fun MiPerfilScreen() {
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-
                     OutlinedTextField(
                         value = nombreCompleto,
                         onValueChange = { nombreCompleto = it },
@@ -134,7 +200,6 @@ fun MiPerfilScreen() {
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-
                     OutlinedTextField(
                         value = correo,
                         onValueChange = {},
@@ -143,7 +208,6 @@ fun MiPerfilScreen() {
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-
                     OutlinedTextField(
                         value = telefono,
                         onValueChange = { telefono = it },
@@ -151,7 +215,6 @@ fun MiPerfilScreen() {
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-
                     OutlinedTextField(
                         value = descripcion,
                         onValueChange = { descripcion = it },
@@ -184,7 +247,6 @@ fun MiPerfilScreen() {
                             "descripcion" to descripcion,
                             "fotoPerfilUrl" to fotoPerfilUrl
                         )
-
                         db.collection("usuarios").document(uid)
                             .update(datosActualizados)
                             .addOnSuccessListener {
@@ -197,9 +259,7 @@ fun MiPerfilScreen() {
             ) {
                 Text("Guardar cambios")
             }
-
             Spacer(modifier = Modifier.height(8.dp))
-
             OutlinedButton(
                 onClick = { modoEdicion = false },
                 modifier = Modifier.fillMaxWidth()
@@ -209,9 +269,12 @@ fun MiPerfilScreen() {
         }
 
         Spacer(modifier = Modifier.height(15.dp))
-
         if (mensajeGuardado.isNotEmpty()) {
-            Text(mensajeGuardado, color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)
+            Text(
+                mensajeGuardado,
+                color = Color(0xFF4CAF50),
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
@@ -226,6 +289,32 @@ fun PerfilDatoItem(titulo: String, valor: String) {
             fontWeight = FontWeight.Medium,
             color = Color(0xFF222222)
         )
-        Divider(modifier = Modifier.padding(top = 10.dp), thickness = 0.7.dp, color = Color.LightGray)
+        Divider(
+            modifier = Modifier.padding(top = 10.dp),
+            thickness = 0.7.dp,
+            color = Color.LightGray
+        )
     }
+}
+
+// 👉 FUNCIÓN PARA SUBIR IMAGEN A CLOUDINARY
+fun subirImagenCloudinary(
+    uri: Uri,
+    onResult: (String?) -> Unit
+) {
+    val requestId = MediaManager.get().upload(uri)
+        .unsigned("perfil_preset") // tu preset de Cloudinary
+        .callback(object : UploadCallback {
+            override fun onStart(requestId: String?) {}
+            override fun onProgress(requestId: String?, bytes: Long, totalBytes: Long) {}
+            override fun onSuccess(requestId: String?, resultData: Map<*, *>?) {
+                val url = resultData?.get("secure_url") as? String
+                onResult(url)
+            }
+            override fun onError(requestId: String?, error: ErrorInfo?) {
+                onResult(null)
+            }
+            override fun onReschedule(requestId: String?, error: ErrorInfo?) {}
+        })
+        .dispatch()
 }

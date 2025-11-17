@@ -80,7 +80,11 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:3.0.0")
     implementation("io.coil-kt:coil-compose:2.7.0")
 
-
+    // All:
+    implementation("com.cloudinary:cloudinary-android:3.1.2")
+// Download + Preprocess:
+    implementation("com.cloudinary:cloudinary-android-download:3.1.2")
+    implementation("com.cloudinary:cloudinary-android-preprocess:3.1.2")
 
     // Tests
     testImplementation(libs.junit)

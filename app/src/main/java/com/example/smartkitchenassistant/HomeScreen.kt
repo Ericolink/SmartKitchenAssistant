@@ -1,6 +1,5 @@
 package com.example.smartkitchenassistant
 
-import BuscarRecetasScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -24,6 +23,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.example.smartkitchenassistant.screens.*
 import com.example.smartkitchenassistant.screens.despensa.DespensaScreen
+import com.example.smartkitchenassistant.screens.buscar.BuscarRecetasScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
