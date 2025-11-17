@@ -127,7 +127,7 @@ fun MiPerfilScreen() {
             OutlinedButton(
                 onClick = { launcherGaleria.launch("image/*") }
             ) {
-                Text("Subir foto")
+                Text("Subir")
             }
 
             // 👉 BOTÓN ACTUALIZAR FOTO

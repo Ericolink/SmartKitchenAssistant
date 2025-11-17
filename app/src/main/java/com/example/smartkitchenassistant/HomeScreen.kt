@@ -24,6 +24,8 @@ import com.google.firebase.auth.auth
 import com.example.smartkitchenassistant.screens.*
 import com.example.smartkitchenassistant.screens.despensa.DespensaScreen
 import com.example.smartkitchenassistant.screens.buscar.BuscarRecetasScreen
+import coil.compose.AsyncImage
+import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,13 +33,12 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
     val auth = Firebase.auth
     val user = auth.currentUser
 
-    var userName by remember {
-        mutableStateOf<String?>(null)
-    }
+    var userName by remember { mutableStateOf<String?>(null) }
+    var fotoPerfilUrl by remember { mutableStateOf<String?>(null) }
 
     var selectedTab by remember { mutableIntStateOf(0) }
 
-    val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+    val db = FirebaseFirestore.getInstance()
 
     LaunchedEffect(user?.uid) {
         user?.uid?.let { uid ->
@@ -46,6 +47,7 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
                 .addSnapshotListener { snapshot, _ ->
                     if (snapshot != null && snapshot.exists()) {
                         userName = snapshot.getString("nombreUsuario")
+                        fotoPerfilUrl = snapshot.getString("fotoPerfilUrl")
                     }
                 }
         }
@@ -63,11 +65,40 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = userName ?: user?.email ?: "invitado",
-                        fontSize = 18.sp
-                    )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+
+                        if (fotoPerfilUrl != null && fotoPerfilUrl!!.isNotEmpty()) {
+                            AsyncImage(
+                                model = fotoPerfilUrl,
+                                contentDescription = "Foto de perfil",
+                                modifier = Modifier
+                                    .size(35.dp)
+                                    .clip(CircleShape)
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Sin foto",
+                                modifier = Modifier
+                                    .size(35.dp)
+                                    .clip(CircleShape),
+                                tint = Color(0xFF344F1F)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        Text(
+                            text = userName ?: user?.email ?: "invitado",
+                            fontSize = 18.sp,
+                            color = Color.Black
+                        )
+                    }
                 },
+
                 actions = {
                     IconButton(onClick = {
                         auth.signOut()
@@ -80,15 +111,16 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
                         )
                     }
                 },
+
                 colors = TopAppBarDefaults.mediumTopAppBarColors(
                     containerColor = Color(0xFFF2EAD3),
                     titleContentColor = Color.Black
                 )
             )
         },
+
         containerColor = Color(0xFFF9F5F0),
 
-        // 🔹 BARRA INFERIOR SOLO CON ICONOS (SIN EFECTO MORADO)
         bottomBar = {
             NavigationBar(
                 modifier = Modifier
@@ -114,7 +146,6 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
                                         if (selected) Color(0xFFF4991A).copy(alpha = 0.15f)
                                         else Color.Transparent
                                     )
-                                    // 🔸 Sin ripple ni sombra morada
                                     .clickable(
                                         indication = null,
                                         interactionSource = remember { MutableInteractionSource() }
