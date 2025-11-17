@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
+import com.example.smartkitchenassistant.data.FavoritosRepository
+import kotlinx.coroutines.launch
 
 @Composable
 fun FavoritosScreen() {
@@ -28,74 +30,16 @@ fun FavoritosScreen() {
     val naranja = Color(0xFFF4991A)
     val verde = Color(0xFF344F1F)
 
-    // Datos de prueba (más adelante conectamos Firebase)
-    var favoritos by remember {
-        mutableStateOf(
-            listOf(
-                FavoritoUI(
-                    id = "52772",
-                    nombre = "Teriyaki Chicken Casserole",
-                    categoria = "Japanese",
-                    imagen = "https://www.themealdb.com/images/media/meals/wvpsxx1468256321.jpg"
-                ),
-                FavoritoUI(
-                    id = "52959",
-                    nombre = "Baked salmon with fennel & tomatoes",
-                    categoria = "British",
-                    imagen = "https://www.themealdb.com/images/media/meals/1548772327.jpg"
-                ),
-                FavoritoUI(
-                    id = "52802",
-                    nombre = "Fish pie",
-                    categoria = "British",
-                    imagen = "https://www.themealdb.com/images/media/meals/ysxwuq1487323065.jpg"
-                ),
-                FavoritoUI(
-                    id = "52844",
-                    nombre = "Lasagne",
-                    categoria = "Italian",
-                    imagen = "https://www.themealdb.com/images/media/meals/wtsvxx1511296896.jpg"
-                ),
-                FavoritoUI(
-                    id = "53013",
-                    nombre = "Apam balik",
-                    categoria = "Malaysian",
-                    imagen = "https://www.themealdb.com/images/media/meals/adxcbq1619787919.jpg"
-                ),
-                FavoritoUI(
-                    id = "52893",
-                    nombre = "Bigos (Hunters Stew)",
-                    categoria = "Polish",
-                    imagen = "https://www.themealdb.com/images/media/meals/rlwcc51598734603.jpg"
-                ),
-                FavoritoUI(
-                    id = "52944",
-                    nombre = "Escovitch Fish",
-                    categoria = "Jamaican",
-                    imagen = "https://www.themealdb.com/images/media/meals/1520084413.jpg"
-                ),
-                FavoritoUI(
-                    id = "52819",
-                    nombre = "Cajun spiced fish tacos",
-                    categoria = "Mexican",
-                    imagen = "https://www.themealdb.com/images/media/meals/uvuyxu1503067369.jpg"
-                ),
-                FavoritoUI(
-                    id = "52931",
-                    nombre = "Sugar Pie",
-                    categoria = "Canadian",
-                    imagen = "https://www.themealdb.com/images/media/meals/yrstur1511816605.jpg"
-                ),
-                FavoritoUI(
-                    id = "52773",
-                    nombre = "Honey Teriyaki Salmon",
-                    categoria = "Japanese",
-                    imagen = "https://www.themealdb.com/images/media/meals/xxyupu1468262513.jpg"
-                )
-            )
-        )
-    }
+    val repo = FavoritosRepository()
+    val scope = rememberCoroutineScope()
 
+    // Lista que viene de Firebase
+    var favoritos by remember { mutableStateOf<List<FavoritoUI>>(emptyList()) }
+
+    // Cargar datos al entrar
+    LaunchedEffect(Unit) {
+        favoritos = repo.obtenerFavoritos()
+    }
 
     Column(
         modifier = Modifier
@@ -131,6 +75,7 @@ fun FavoritosScreen() {
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 items(favoritos) { fav ->
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -166,9 +111,9 @@ fun FavoritosScreen() {
                                 color = naranja
                             )
                         }
-                        IconButton(
-                            onClick = {}
-                        ) {
+
+                        // Botón reproducir
+                        IconButton(onClick = {}) {
                             Icon(
                                 imageVector = Icons.Default.PlayArrow,
                                 contentDescription = "Reproducir receta",
@@ -176,10 +121,13 @@ fun FavoritosScreen() {
                             )
                         }
 
-                        // Botón quitar favorito
+                        // Botón eliminar favorito
                         IconButton(
                             onClick = {
-                                favoritos = favoritos.filterNot { it.id == fav.id }
+                                scope.launch {
+                                    repo.eliminarFavorito(fav.id)
+                                    favoritos = favoritos.filterNot { it.id == fav.id }
+                                }
                             }
                         ) {
                             Icon(
@@ -196,8 +144,8 @@ fun FavoritosScreen() {
 }
 
 data class FavoritoUI(
-    val id: String,
-    val nombre: String,
-    val categoria: String,
-    val imagen: String
+    val id: String = "",
+    val nombre: String = "",
+    val categoria: String = "",
+    val imagen: String = ""
 )

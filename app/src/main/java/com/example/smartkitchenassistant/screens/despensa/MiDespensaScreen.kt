@@ -154,7 +154,7 @@ fun DespensaScreen(viewModel: DespensaViewModel = viewModel()) {
 
         if (ingredientes.isEmpty()) {
             Text(
-                text = "Tu despensa está vacía 🍽️",
+                text = "Tu despensa está vacía",
                 color = verde,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 20.dp)

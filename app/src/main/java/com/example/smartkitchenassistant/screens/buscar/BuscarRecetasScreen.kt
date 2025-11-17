@@ -24,11 +24,13 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.smartkitchenassistant.screens.buscar.BuscarRecetasViewModel
+import kotlinx.coroutines.launch
+import com.example.smartkitchenassistant.data.FavoritosRepository
+import com.example.smartkitchenassistant.screens.FavoritoUI   // ← IMPORTANTE
 
 @Composable
 fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
 
-    // Paleta de colores
     val Primario = Color(0xFFF9F5F0)
     val Secundario = Color(0xFFF2EAD3)
     val naranja = Color(0xFFF4991A)
@@ -37,8 +39,12 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
     var query by remember { mutableStateOf(TextFieldValue("")) }
     val meals by viewModel.meals.collectAsState()
 
-    // Estado local para favoritos
+    // Estado local (solo para la UI)
     val favoritos = remember { mutableStateListOf<String>() }
+
+    // --- NUEVO ---
+    val repo = FavoritosRepository()
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -46,7 +52,7 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
             .background(Primario)
             .padding(16.dp)
     ) {
-        // Título
+
         Text(
             text = "Buscar recetas",
             style = MaterialTheme.typography.titleLarge,
@@ -56,7 +62,6 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // Input de búsqueda
         OutlinedTextField(
             value = query,
             onValueChange = {
@@ -85,12 +90,12 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Lista con LazyColumn (scroll suave)
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             items(meals) { meal ->
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -99,7 +104,7 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
                         .padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Imagen de la receta
+
                     Image(
                         painter = rememberAsyncImagePainter(meal.strMealThumb),
                         contentDescription = meal.strMeal,
@@ -110,7 +115,6 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
 
                     Spacer(modifier = Modifier.width(12.dp))
 
-                    // Info de la receta
                     Column(
                         modifier = Modifier.weight(1f)
                     ) {
@@ -126,10 +130,7 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
                         )
                     }
 
-                    // Botón de reproducir
-                    IconButton(
-                        onClick = {}
-                    ) {
+                    IconButton(onClick = {}) {
                         Icon(
                             imageVector = Icons.Default.PlayArrow,
                             contentDescription = "Reproducir receta",
@@ -137,12 +138,29 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
                         )
                     }
 
-                    // Botón de favorito
+                    // -------------------- FAVORITO --------------------
                     val esFavorito = favoritos.contains(meal.idMeal)
+
                     IconButton(
                         onClick = {
-                            if (esFavorito) favoritos.remove(meal.idMeal)
-                            else favoritos.add(meal.idMeal)
+
+                            if (esFavorito) {
+                                favoritos.remove(meal.idMeal)
+                            } else {
+                                favoritos.add(meal.idMeal)
+
+                                // ---- GUARDAR EN FIREBASE ----
+                                scope.launch {
+                                    repo.agregarFavorito(
+                                        FavoritoUI(
+                                            id = meal.idMeal,
+                                            nombre = meal.strMeal,
+                                            categoria = meal.strCategory ?: "Sin categoría",
+                                            imagen = meal.strMealThumb ?: ""
+                                        )
+                                    )
+                                }
+                            }
                         }
                     ) {
                         Icon(
@@ -155,7 +173,6 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
             }
         }
 
-        // Mensaje si no hay resultados
         if (meals.isEmpty() && query.text.isNotEmpty()) {
             Text(
                 text = "No se encontraron recetas para \"${query.text}\"",
