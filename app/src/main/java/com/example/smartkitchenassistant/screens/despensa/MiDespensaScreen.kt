@@ -19,6 +19,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.smartkitchenassistant.data.model.Ingrediente
 
 @Composable
 fun DespensaScreen(viewModel: DespensaViewModel = viewModel()) {
@@ -29,8 +30,11 @@ fun DespensaScreen(viewModel: DespensaViewModel = viewModel()) {
     val verde = Color(0xFF344F1F)
 
     var nuevoIngrediente by remember { mutableStateOf(TextFieldValue("")) }
-    var ingredienteAEditar by remember { mutableStateOf<String?>(null) }
+    var nuevaCantidad by remember { mutableStateOf(TextFieldValue("")) }
+
+    var ingredienteAEditar by remember { mutableStateOf<Ingrediente?>(null) }
     var textoEditado by remember { mutableStateOf("") }
+    var cantidadEditada by remember { mutableStateOf("") }
 
     val ingredientes by viewModel.ingredientes.collectAsState()
 
@@ -53,15 +57,29 @@ fun DespensaScreen(viewModel: DespensaViewModel = viewModel()) {
         OutlinedTextField(
             value = nuevoIngrediente,
             onValueChange = { nuevoIngrediente = it },
-            label = { Text("Agregar ingrediente...", color = verde) },
-            placeholder = { Text("Ejemplo: tomate") },
+            label = { Text("Ingrediente", color = verde) },
+            placeholder = { Text("Ejemplo: Tomate") },
             singleLine = true,
             leadingIcon = {
                 Icon(Icons.Default.Search, contentDescription = "Agregar", tint = verde)
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(secundario),
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = naranja,
+                unfocusedBorderColor = verde,
+                cursorColor = naranja
+            )
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = nuevaCantidad,
+            onValueChange = { nuevaCantidad = it },
+            label = { Text("Cantidad", color = verde) },
+            placeholder = { Text("Ejemplo: 2 kg, 3 piezas...") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = naranja,
                 unfocusedBorderColor = verde,
@@ -73,9 +91,13 @@ fun DespensaScreen(viewModel: DespensaViewModel = viewModel()) {
 
         Button(
             onClick = {
-                if (nuevoIngrediente.text.isNotBlank()) {
-                    viewModel.agregarIngrediente(nuevoIngrediente.text.trim())
+                if (nuevoIngrediente.text.isNotBlank() && nuevaCantidad.text.isNotBlank()) {
+                    viewModel.agregarIngrediente(
+                        nuevoIngrediente.text.trim(),
+                        nuevaCantidad.text.trim()
+                    )
                     nuevoIngrediente = TextFieldValue("")
+                    nuevaCantidad = TextFieldValue("")
                 }
             },
             colors = ButtonDefaults.buttonColors(
@@ -111,7 +133,7 @@ fun DespensaScreen(viewModel: DespensaViewModel = viewModel()) {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = ingrediente.take(1).uppercase(),
+                            text = ingrediente.nombre.take(1).uppercase(),
                             color = naranja,
                             fontSize = 20.sp
                         )
@@ -119,18 +141,24 @@ fun DespensaScreen(viewModel: DespensaViewModel = viewModel()) {
 
                     Spacer(modifier = Modifier.width(12.dp))
 
-                    Text(
-                        text = ingrediente,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = verde,
-                        modifier = Modifier.weight(1f)
-                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = ingrediente.nombre,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = verde
+                        )
+                        Text(
+                            text = ingrediente.cantidad,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
+                        )
+                    }
 
-                    // Botón editar (lápiz)
                     IconButton(
                         onClick = {
                             ingredienteAEditar = ingrediente
-                            textoEditado = ingrediente
+                            textoEditado = ingrediente.nombre
+                            cantidadEditada = ingrediente.cantidad
                         }
                     ) {
                         Icon(
@@ -140,7 +168,6 @@ fun DespensaScreen(viewModel: DespensaViewModel = viewModel()) {
                         )
                     }
 
-                    // Botón eliminar
                     IconButton(onClick = { viewModel.eliminarIngrediente(ingrediente) }) {
                         Icon(
                             Icons.Default.Delete,
@@ -162,24 +189,32 @@ fun DespensaScreen(viewModel: DespensaViewModel = viewModel()) {
         }
     }
 
-    // Diálogo para editar ingrediente
     if (ingredienteAEditar != null) {
         AlertDialog(
             onDismissRequest = { ingredienteAEditar = null },
             title = { Text("Editar ingrediente") },
             text = {
-                TextField(
-                    value = textoEditado,
-                    onValueChange = { textoEditado = it },
-                    placeholder = { Text("Nuevo nombre") }
-                )
+                Column {
+                    TextField(
+                        value = textoEditado,
+                        onValueChange = { textoEditado = it },
+                        placeholder = { Text("Nuevo nombre") }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextField(
+                        value = cantidadEditada,
+                        onValueChange = { cantidadEditada = it },
+                        placeholder = { Text("Cantidad") }
+                    )
+                }
             },
             confirmButton = {
                 TextButton(onClick = {
-                    if (textoEditado.isNotBlank()) {
+                    if (textoEditado.isNotBlank() && cantidadEditada.isNotBlank()) {
                         viewModel.editarIngrediente(
                             ingredienteAEditar!!,
-                            textoEditado.trim()
+                            textoEditado.trim(),
+                            cantidadEditada.trim()
                         )
                     }
                     ingredienteAEditar = null
