@@ -2,34 +2,18 @@ package com.example.smartkitchenassistant
 
 import android.app.Activity
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -37,6 +21,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.Firebase
@@ -45,198 +30,149 @@ import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 
+// Paleta de la app
+val Primario = Color(0xFFF9F5F0)
+val Secundario = Color(0xFFF2EAD3)
+val naranja = Color(0xFFF4991A)
+val verde = Color(0xFF344F1F)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegisterScreen (onClickBack : ()-> Unit = {}, onSuccessfulRegister : ()-> Unit = {}) {
+fun RegisterScreen(
+    onClickBack: () -> Unit = {},
+    onSuccessfulRegister: () -> Unit = {}
+) {
 
     val auth = Firebase.auth
     val activity = LocalView.current.context as Activity
-
     val db = Firebase.firestore
 
-    //ESTADOS DE LOS IMPUT
+    var inputName by remember { mutableStateOf("") }
+    var inputEmail by remember { mutableStateOf("") }
+    var inputPassword by remember { mutableStateOf("") }
+    var inputPasswordConfirmation by remember { mutableStateOf("") }
 
-    var inputName by remember {
-        mutableStateOf("")
-    }
-    var inputEmail by remember {
-        mutableStateOf("")
-    }
-    var inputPassword by remember {
-        mutableStateOf("")
-    }
-    var inputPasswordConfirmation by remember {
-        mutableStateOf("")
-    }
+    var nameError by remember { mutableStateOf("") }
+    var emailError by remember { mutableStateOf("") }
+    var passwordError by remember { mutableStateOf("") }
+    var passwordConfirmationError by remember { mutableStateOf("") }
 
-    var nameError by remember {
-        mutableStateOf("")
-    }
-    var emailError by remember {
-        mutableStateOf("")
-    }
-    var passwordError by remember {
-        mutableStateOf("")
-    }
-    var passwordConfirmationError by remember {
-        mutableStateOf("")
-    }
-
-    var registerError by remember {
-        mutableStateOf("")
-    }
-
-    var successMessage by remember {
-        mutableStateOf("")
-    }
+    var registerError by remember { mutableStateOf("") }
+    var successMessage by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                },
+                title = {},
                 navigationIcon = {
                     IconButton(onClick = onClickBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "icon register"
+                            contentDescription = "volver",
+                            tint = verde
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Primario
+                )
             )
         }
     ) { innerPadding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Primario)
                 .padding(innerPadding)
-                .padding(horizontal = 32.dp)
+                .padding(20.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.Top,
-            horizontalAlignment = Alignment.CenterHorizontally )
-        {
-            // Logo de la app
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            Spacer(modifier = Modifier.height(10.dp))
+
             Image(
                 painter = painterResource(id = R.drawable.logo1),
-                contentDescription = "Register Image",
-                modifier = Modifier.size(200.dp)
+                contentDescription = "logo",
+                modifier = Modifier.size(160.dp)
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = "Registro",
-                fontSize = 22.sp,
+                fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFFFF9800) // Naranja
+                color = verde
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // Campo: Nombre
-            OutlinedTextField(
-                value = inputName,
-                onValueChange = { inputName = it },
-                label = { Text("Nombre de Usuario") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Name Icon"
-                    )
-                },
+            // CARD MODERNA
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                supportingText = {
-                    if (nameError.isNotEmpty()){
-                        Text(
-                            text = nameError,
-                            color = Color.Red
-                        )
-                    }
-                }
-            )
+                shape = RoundedCornerShape(22.dp),
+                colors = CardDefaults.cardColors(Secundario),
+                elevation = CardDefaults.cardElevation(8.dp)
+            ) {
 
-            Spacer(modifier = Modifier.height(12.dp))
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
 
-            // Campo: Correo
-            OutlinedTextField(
-                value = inputEmail,
-                onValueChange = { inputEmail = it },
-                label = { Text("Email") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Email,
-                        contentDescription = "Email Icon"
+                    // Nombre
+                    ModernInput(
+                        label = "Nombre de usuario",
+                        value = inputName,
+                        onValueChange = { inputName = it },
+                        icon = Icons.Default.Person,
+                        error = nameError
                     )
-                },
-                modifier = Modifier.fillMaxWidth(),
-                supportingText = {
-                    if (emailError.isNotEmpty()){
-                        Text(
-                            text = emailError,
-                            color = Color.Red
-                        )
-                    }
-                }
-            )
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Campo: Contraseña
-            OutlinedTextField(
-                value = inputPassword,
-                onValueChange = { inputPassword = it },
-                label = { Text("Contraseña") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = "Password Icon"
+                    // Email
+                    ModernInput(
+                        label = "Correo electrónico",
+                        value = inputEmail,
+                        onValueChange = { inputEmail = it },
+                        icon = Icons.Default.Email,
+                        error = emailError
                     )
-                },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
-                supportingText = {
-                    if (passwordError.isNotEmpty()){
-                        Text(
-                            text = passwordError,
-                            color = Color.Red
-                        )
-                    }
-                }
-            )
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Campo: Confirmar Contraseña
-            OutlinedTextField(
-                value = inputPasswordConfirmation,
-                onValueChange = { inputPasswordConfirmation = it },
-                label = { Text("Confirmar Contraseña") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = "Password Confirmation Icon"
+                    // Contraseña
+                    ModernInput(
+                        label = "Contraseña",
+                        value = inputPassword,
+                        onValueChange = { inputPassword = it },
+                        icon = Icons.Default.Lock,
+                        isPassword = true,
+                        error = passwordError
                     )
-                },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
-                supportingText = {
-                    if (passwordConfirmationError.isNotEmpty()){
-                        Text(
-                            text = passwordConfirmationError,
-                            color = Color.Red
-                        )
-                    }
-                }
-            )
 
-            if (registerError.isNotEmpty()){
-                Text(registerError, color = Color.Red)
-            }
-            if (successMessage.isNotEmpty()){
-                Text(successMessage, color = Color(0xFF4CAF50))
+                    // Confirmar contraseña
+                    ModernInput(
+                        label = "Confirmar contraseña",
+                        value = inputPasswordConfirmation,
+                        onValueChange = { inputPasswordConfirmation = it },
+                        icon = Icons.Default.Lock,
+                        isPassword = true,
+                        error = passwordConfirmationError
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Botón de Registro
+            if (registerError.isNotEmpty())
+                Text(registerError, color = Color.Red, fontSize = 14.sp)
+
+            if (successMessage.isNotEmpty())
+                Text(successMessage, color = verde, fontSize = 14.sp)
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // BOTÓN MODERNO
             Button(
                 onClick = {
 
@@ -250,60 +186,93 @@ fun RegisterScreen (onClickBack : ()-> Unit = {}, onSuccessfulRegister : ()-> Un
                     passwordError = validatePassword(inputPassword).second
                     passwordConfirmationError = validateConfirmPassword(inputPassword, inputPasswordConfirmation).second
 
-                    if (isValidName && isValidEmail && isValidPassword && isValidConfirmPassword){
-                        auth.createUserWithEmailAndPassword(inputEmail, inputPassword).
-                        addOnCompleteListener(activity) { task ->
-                            if (task.isSuccessful) {
+                    if (isValidName && isValidEmail && isValidPassword && isValidConfirmPassword) {
+                        auth.createUserWithEmailAndPassword(inputEmail, inputPassword)
+                            .addOnCompleteListener(activity) { task ->
+                                if (task.isSuccessful) {
 
-                                val user = auth.currentUser
-                                val uid = user?.uid
+                                    val user = auth.currentUser
+                                    val uid = user?.uid
 
-                                if (uid != null) {
-                                    val userData = hashMapOf(
-                                        "nombreUsuario" to inputName,
-                                        "correo" to inputEmail,
-                                        "fechaRegistro" to com.google.firebase.firestore.FieldValue.serverTimestamp()
-                                    )
-                                    db.collection("usuarios")
-                                        .document(uid)
-                                        .set(userData)
-                                        .addOnSuccessListener {
-                                            // Guardado correctamente
-                                        }
-                                        .addOnFailureListener {
-                                            // Falló el guardado
-                                        }
-                                }
+                                    if (uid != null) {
+                                        val userData = hashMapOf(
+                                            "nombreUsuario" to inputName,
+                                            "correo" to inputEmail,
+                                            "fechaRegistro" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                                        )
+                                        db.collection("usuarios")
+                                            .document(uid)
+                                            .set(userData)
+                                    }
 
-                                user?.sendEmailVerification()?.addOnCompleteListener { verifyTask ->
-                                    if (verifyTask.isSuccessful) {
-                                        successMessage =
-                                            "Registro exitoso. Revisa tu correo para verificar tu cuenta antes de iniciar sesión."
-                                        auth.signOut()
-                                    } else {
-                                        registerError =
-                                            "Error al enviar el correo de verificación. Intenta nuevamente."
+                                    user?.sendEmailVerification()
+                                    successMessage = "Registro exitoso. Revisa tu correo para verificarlo."
+                                    auth.signOut()
+
+                                } else {
+                                    registerError = when (task.exception) {
+                                        is FirebaseAuthInvalidCredentialsException -> "Correo inválido"
+                                        is FirebaseAuthUserCollisionException -> "Correo ya registrado"
+                                        else -> "Error al registrarse"
                                     }
                                 }
-                            } else {
-                                registerError = when (task.exception) {
-                                    is FirebaseAuthInvalidCredentialsException -> "Correo inválido"
-                                    is FirebaseAuthUserCollisionException -> "Correo ya registrado"
-                                    else -> "Error al registrarse"
-                                }
                             }
-                        }
-                    } else {
-                        registerError = "Por favor, completa correctamente todos los campos."
-                    }
 
+                    } else {
+                        registerError = "Llena correctamente todos los campos."
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
+                    .height(54.dp),
+                colors = ButtonDefaults.buttonColors(naranja),
+                shape = RoundedCornerShape(16.dp)
             ) {
-                Text(text = "Registrarse")
+                Text(
+                    text = "Registrarse",
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ModernInput(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    isPassword: Boolean = false,
+    error: String = ""
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        leadingIcon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = verde
+            )
+        },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+        supportingText = {
+            if (error.isNotEmpty()) Text(error, color = Color.Red)
+        },
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = naranja,
+            unfocusedBorderColor = verde.copy(alpha = 0.5f),
+            focusedLabelColor = naranja,
+            unfocusedLabelColor = verde
+        )
+    )
 }
