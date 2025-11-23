@@ -27,6 +27,7 @@ import com.example.smartkitchenassistant.screens.buscar.BuscarRecetasViewModel
 import kotlinx.coroutines.launch
 import com.example.smartkitchenassistant.data.FavoritosRepository
 import com.example.smartkitchenassistant.screens.FavoritoUI   // ← IMPORTANTE
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
@@ -46,6 +47,8 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
     // --- NUEVO ---
     val repo = FavoritosRepository()
     val scope = rememberCoroutineScope()
+
+    val uid = FirebaseAuth.getInstance().currentUser?.uid
 
     Column(
         modifier = Modifier
@@ -131,25 +134,27 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
                         )
                     }
 
+                    //Enviar a la TV
+
                     IconButton(onClick = {
+
+                        if (uid == null) return@IconButton
 
                         val receta = hashMapOf(
                             "title" to meal.strMeal,
                             "category" to (meal.strCategory ?: "Sin categoría"),
                             "image" to (meal.strMealThumb ?: ""),
-
-                            // Ingredientes y pasos NO vienen en la búsqueda básica
-                            // Se deben pedir a la API por ID
                             "ingredients" to listOf("Cargando ingredientes..."),
                             "steps" to listOf("Cargando pasos...")
                         )
 
                         FirebaseFirestore.getInstance()
+                            .collection("usuarios")
+                            .document(uid)
                             .collection("recetas")
                             .document("actual")
                             .set(receta)
-                    }
-                    ) {
+                    }) {
                         Icon(
                             imageVector = Icons.Default.PlayArrow,
                             contentDescription = "Enviar a TV",

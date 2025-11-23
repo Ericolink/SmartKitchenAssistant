@@ -17,6 +17,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SmartKitchenAssistant">
         <activity
+            android:name=".TVLoginActivity"
+            android:exported="false" />
+        <activity
             android:name=".TVMainActivity"
             android:exported="true">
             <intent-filter>
