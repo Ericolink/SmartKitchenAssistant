@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Smart Kitchen Assistant"
 include(":app")
+include(":smartkitchenassistanttv")
