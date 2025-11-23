@@ -20,6 +20,7 @@ foundationLayout = "1.9.4"
 appcompat = "1.7.1"
 tvFoundation = "1.0.0-alpha12"
 tvMaterial = "1.0.1"
+googleGmsGoogleServices = "4.4.4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -53,4 +54,5 @@ androidx-tv-material = { group = "androidx.tv", name = "tv-material", version.re
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+google-gms-google-services = { id = "com.google.gms.google-services", version.ref = "googleGmsGoogleServices" }
 
