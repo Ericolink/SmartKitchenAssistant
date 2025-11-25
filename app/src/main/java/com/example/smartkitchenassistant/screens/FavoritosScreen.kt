@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.example.smartkitchenassistant.data.FavoritosRepository
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 
 @Composable
@@ -35,6 +37,8 @@ fun FavoritosScreen() {
 
     // Lista que viene de Firebase
     var favoritos by remember { mutableStateOf<List<FavoritoUI>>(emptyList()) }
+
+    val uid = FirebaseAuth.getInstance().currentUser?.uid
 
     // Cargar datos al entrar
     LaunchedEffect(Unit) {
@@ -113,12 +117,27 @@ fun FavoritosScreen() {
                         }
 
                         // Botón reproducir
-                        IconButton(onClick = {}) {
-                            Icon(
-                                imageVector = Icons.Default.PlayArrow,
-                                contentDescription = "Reproducir receta",
-                                tint = naranja
+                        IconButton(onClick = {
+
+                            if (uid == null) return@IconButton
+
+                            val receta = hashMapOf(
+                                "title" to fav.nombre,
+                                "category" to fav.categoria,
+                                "image" to fav.imagen,
+                                "ingredients" to listOf("Cargando ingredientes..."),
+                                "steps" to listOf("Cargando pasos...")
                             )
+
+                            FirebaseFirestore.getInstance()
+                                .collection("usuarios")
+                                .document(uid)
+                                .collection("recetas")
+                                .document("actual")
+                                .set(receta)
+
+                        }) {
+                            Icon(Icons.Default.PlayArrow, "Enviar a TV", tint = naranja)
                         }
 
                         // Botón eliminar favorito
