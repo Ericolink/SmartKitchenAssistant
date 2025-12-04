@@ -6,6 +6,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -14,9 +16,9 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil.compose.AsyncImage
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.auth.FirebaseAuth
 
 class TVMainActivity : ComponentActivity() {
 
@@ -38,7 +40,7 @@ class TVMainActivity : ComponentActivity() {
 
         val uid = currentUser.uid
 
-        // Estado REAL de Compose: se actualizará cuando Firestore cambie
+        // Estado correcto para Compose (remember)
         val recipeState = mutableStateOf<Recipe?>(null)
 
         // Listener Firestore 🔥
@@ -48,15 +50,18 @@ class TVMainActivity : ComponentActivity() {
             .document("actual")
             .addSnapshotListener { snapshot, _ ->
                 recipeState.value =
-                    if (snapshot != null && snapshot.exists()) snapshot.toObject(Recipe::class.java)
+                    if (snapshot != null && snapshot.exists())
+                        snapshot.toObject(Recipe::class.java)
                     else null
             }
 
         setContent {
             val context = LocalContext.current
 
-            Column {
-                TVRecipeScreen(recipeState.value)
+            Column(
+                Modifier.fillMaxSize().padding(16.dp)
+            ) {
+                TVRecipeScreen(recipe = recipeState.value)
 
                 Spacer(Modifier.height(20.dp))
 
@@ -69,58 +74,71 @@ class TVMainActivity : ComponentActivity() {
                 }
             }
         }
-
-        fun onDestroy() {
-            listener?.remove()
-            super.onDestroy()
-        }
     }
 
-    @Composable
-    fun TVRecipeScreen(recipe: Recipe?) {
+    override fun onDestroy() {
+        listener?.remove()
+        super.onDestroy()
+    }
+}
 
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(40.dp)
-        ) {
+@Composable
+fun TVRecipeScreen(recipe: Recipe?) {
 
-            Text("SmartKitchenAssistant - TV", style = MaterialTheme.typography.headlineLarge)
+    val scrollState = rememberScrollState()
 
-            Spacer(Modifier.height(30.dp))
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(40.dp)
+            .verticalScroll(scrollState)
+    ) {
 
-            if (recipe == null) {
-                Text("Esperando receta…", style = MaterialTheme.typography.headlineMedium)
-                return
-            }
+        Text(
+            "SmartKitchenAssistant - TV",
+            style = MaterialTheme.typography.headlineLarge
+        )
 
-            // Imagen
-            AsyncImage(
-                model = recipe.image,
-                contentDescription = recipe.title,
-                modifier = Modifier
-                    .height(260.dp)
-                    .fillMaxWidth()
+        Spacer(Modifier.height(30.dp))
+
+        if (recipe == null) {
+            Text(
+                "Esperando receta…",
+                style = MaterialTheme.typography.headlineMedium
             )
-
-            Spacer(Modifier.height(25.dp))
-
-            Text(recipe.title, style = MaterialTheme.typography.headlineLarge)
-            Text("Categoría: ${recipe.category}", style = MaterialTheme.typography.headlineMedium)
-
-            Spacer(Modifier.height(25.dp))
-            Text("Ingredientes", style = MaterialTheme.typography.titleLarge)
-
-            recipe.ingredients.forEach { ing ->
-                Text("• $ing", style = MaterialTheme.typography.bodyLarge)
-            }
-
-            Spacer(Modifier.height(25.dp))
-
-            Text("Pasos", style = MaterialTheme.typography.titleLarge)
-            recipe.steps.forEachIndexed { i, step ->
-                Text("${i + 1}. $step", style = MaterialTheme.typography.bodyLarge)
-            }
+            return
         }
+
+        // Imagen
+        AsyncImage(
+            model = recipe.image,
+            contentDescription = recipe.title,
+            modifier = Modifier
+                .height(260.dp)
+                .fillMaxWidth()
+        )
+
+        Spacer(Modifier.height(25.dp))
+
+        Text(recipe.title, style = MaterialTheme.typography.headlineLarge)
+        Text("Categoría: ${recipe.category}", style = MaterialTheme.typography.headlineMedium)
+
+        Spacer(Modifier.height(25.dp))
+
+        // Ingredientes
+        Text("Ingredientes", style = MaterialTheme.typography.titleLarge)
+        recipe.ingredients.forEach {
+            Text("• $it", style = MaterialTheme.typography.bodyLarge)
+        }
+
+        Spacer(Modifier.height(25.dp))
+
+        // Pasos
+        Text("Pasos", style = MaterialTheme.typography.titleLarge)
+        recipe.steps.forEachIndexed { i, step ->
+            Text("${i + 1}. $step", style = MaterialTheme.typography.bodyLarge)
+        }
+
+        Spacer(Modifier.height(40.dp))
     }
 }
