@@ -23,12 +23,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
-import com.example.smartkitchenassistant.screens.buscar.BuscarRecetasViewModel
-import kotlinx.coroutines.launch
 import com.example.smartkitchenassistant.data.FavoritosRepository
-import com.example.smartkitchenassistant.screens.FavoritoUI   // ← IMPORTANTE
+import com.example.smartkitchenassistant.screens.FavoritoUI
+import com.example.smartkitchenassistant.screens.enviarRecetaATV
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
 
 @Composable
 fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
@@ -41,14 +41,13 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
     var query by remember { mutableStateOf(TextFieldValue("")) }
     val meals by viewModel.meals.collectAsState()
 
-    // Estado local (solo para la UI)
-    val favoritos = remember { mutableStateListOf<String>() }
-
-    // --- NUEVO ---
-    val repo = FavoritosRepository()
     val scope = rememberCoroutineScope()
+    val repo = FavoritosRepository()
 
     val uid = FirebaseAuth.getInstance().currentUser?.uid
+
+    // Lista de favoritos SOLO para la UI (los marcados localmente)
+    val favoritosUI = remember { mutableStateListOf<String>() }
 
     Column(
         modifier = Modifier
@@ -73,18 +72,12 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
                 if (it.text.isNotEmpty()) viewModel.buscarRecetas(it.text)
             },
             label = { Text("Buscar receta...", color = verde) },
-            placeholder = { Text("Ejemplo: pizza") },
+            placeholder = { Text("Ejemplo: pasta, pollo, pizza...") },
             singleLine = true,
             leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Buscar",
-                    tint = verde
-                )
+                Icon(Icons.Default.Search, contentDescription = null, tint = verde)
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Secundario),
+            modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = naranja,
                 unfocusedBorderColor = verde,
@@ -98,8 +91,12 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+
             items(meals) { meal ->
 
+                // --------------------------------------------------------------
+                // TARJETA DEL RESULTADO DE BÚSQUEDA (igual a FavoritosScreen)
+                // --------------------------------------------------------------
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -111,7 +108,7 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
 
                     Image(
                         painter = rememberAsyncImagePainter(meal.strMealThumb),
-                        contentDescription = meal.strMeal,
+                        contentDescription = null,
                         modifier = Modifier
                             .size(90.dp)
                             .clip(RoundedCornerShape(12.dp))
@@ -119,61 +116,46 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
 
                     Spacer(modifier = Modifier.width(12.dp))
 
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = meal.strMeal,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = verde
-                        )
-                        Text(
-                            text = meal.strCategory ?: "",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = naranja
-                        )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(meal.strMeal, style = MaterialTheme.typography.titleMedium, color = verde)
+                        Text(meal.strCategory ?: "", color = naranja)
                     }
 
-                    //Enviar a la TV
-
+                    // ----------------------------------------------------------
+                    // BOTÓN ENVIAR A TV — usando tu método oficial
+                    // ----------------------------------------------------------
                     IconButton(onClick = {
 
                         if (uid == null) return@IconButton
 
-                        val receta = hashMapOf(
-                            "title" to meal.strMeal,
-                            "category" to (meal.strCategory ?: "Sin categoría"),
-                            "image" to (meal.strMealThumb ?: ""),
-                            "ingredients" to listOf("Cargando ingredientes..."),
-                            "steps" to listOf("Cargando pasos...")
-                        )
+                        scope.launch {
+                            enviarRecetaATV(
+                                fav = FavoritoUI(
+                                    id = meal.idMeal,
+                                    nombre = meal.strMeal,
+                                    categoria = meal.strCategory ?: "",
+                                    imagen = meal.strMealThumb ?: ""
+                                ),
+                                uid = uid
+                            )
+                        }
 
-                        FirebaseFirestore.getInstance()
-                            .collection("usuarios")
-                            .document(uid)
-                            .collection("recetas")
-                            .document("actual")
-                            .set(receta)
                     }) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "Enviar a TV",
-                            tint = naranja
-                        )
+                        Icon(Icons.Default.PlayArrow, "Enviar a TV", tint = naranja)
                     }
 
-                    // -------------------- FAVORITO --------------------
-                    val esFavorito = favoritos.contains(meal.idMeal)
+                    // ----------------------------------------------------------
+                    // BOTÓN FAVORITO — mismlógica que FavoritosScreen
+                    // ----------------------------------------------------------
+                    val esFavorito = favoritosUI.contains(meal.idMeal)
 
                     IconButton(
                         onClick = {
-
                             if (esFavorito) {
-                                favoritos.remove(meal.idMeal)
+                                favoritosUI.remove(meal.idMeal)
                             } else {
-                                favoritos.add(meal.idMeal)
+                                favoritosUI.add(meal.idMeal)
 
-                                // ---- GUARDAR EN FIREBASE ----
                                 scope.launch {
                                     repo.agregarFavorito(
                                         FavoritoUI(
@@ -188,7 +170,10 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
                         }
                     ) {
                         Icon(
-                            imageVector = if (esFavorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            imageVector = if (esFavorito)
+                                Icons.Default.Favorite
+                            else
+                                Icons.Default.FavoriteBorder,
                             contentDescription = "Favorito",
                             tint = if (esFavorito) Color.Red else verde
                         )
