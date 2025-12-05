@@ -29,6 +29,7 @@ import com.example.smartkitchenassistant.data.FavoritosRepository
 import com.example.smartkitchenassistant.screens.FavoritoUI   // ← IMPORTANTE
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.Job
 
 @Composable
 fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
@@ -50,6 +51,10 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
 
     val uid = FirebaseAuth.getInstance().currentUser?.uid
 
+    val firestore = FirebaseFirestore.getInstance()
+
+    var typingJob by remember { mutableStateOf<Job?>(null) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -68,19 +73,46 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
 
         OutlinedTextField(
             value = query,
-            onValueChange = {
-                query = it
-                if (it.text.isNotEmpty()) viewModel.buscarRecetas(it.text)
+            onValueChange = { newText ->
+                query = newText   // newText es TextFieldValue
+
+                val text = newText.text   // ← AQUÍ ESTÁ LA SOLUCIÓN
+
+                // Buscar mientras escribe
+                if (text.isNotEmpty()) {
+                    viewModel.buscarRecetas(text)
+                }
+
+                typingJob?.cancel()
+
+                if (text.length >= 3 && uid != null) {
+                    typingJob = scope.launch {
+                        kotlinx.coroutines.delay(4000)
+
+                        val textoFinal = text.trim().lowercase()
+
+                        val docRef = firestore.collection("usuarios")
+                            .document(uid)
+                            .collection("historialBusquedas")
+                            .document(textoFinal)
+
+                        docRef.get().addOnSuccessListener { document ->
+                            if (!document.exists()) {
+                                docRef.set(
+                                    mapOf(
+                                        "texto" to textoFinal
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
             },
             label = { Text("Buscar receta...", color = verde) },
             placeholder = { Text("Ejemplo: pizza") },
             singleLine = true,
             leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Buscar",
-                    tint = verde
-                )
+                Icon(imageVector = Icons.Default.Search, contentDescription = null)
             },
             modifier = Modifier
                 .fillMaxWidth()

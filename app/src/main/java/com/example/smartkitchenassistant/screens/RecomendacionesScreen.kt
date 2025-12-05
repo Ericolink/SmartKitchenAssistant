@@ -10,125 +10,147 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.smartkitchenassistant.R
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.rememberAsyncImagePainter
+import com.example.smartkitchenassistant.data.FavoritosRepository
+import com.example.smartkitchenassistant.data.model.Meal
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
 
-data class RecetaRecomendada(
-    val id: String = "",
-    val titulo: String = "",
-    val categoria: String = "",
-    val imagen: Int,
-)
+// ============================================================
+//                    PANTALLA COMPLETA
+// ============================================================
 
 @Composable
-fun RecomendacionesScreen() {
+fun RecomendacionesScreen(
+    viewModel: RecomendacionesViewModel = viewModel()
+) {
+    val recetas by viewModel.recomendaciones.collectAsState()
+    val cargando by viewModel.cargando.collectAsState()
 
-    // 🔥 Ejemplo de recetas de demostración (solo vista)
-    val recetasDemo = listOf(
-        RecetaRecomendada(
-            id = "1",
-            titulo = "Tacos de pollo especiado",
-            categoria = "Mexican",
-            imagen = R.drawable.food1
-        ),
-        RecetaRecomendada(
-            id = "2",
-            titulo = "Sopa cremosa de vegetales",
-            categoria = "Vegetarian",
-            imagen = R.drawable.food2
-        ),
-        RecetaRecomendada(
-            id = "3",
-            titulo = "Pasta al pesto con queso",
-            categoria = "Italian",
-            imagen = R.drawable.food3
-        )
-    )
+    val repo = FavoritosRepository()
+    val scope = rememberCoroutineScope()
+
+    // Lista de favoritos desde Firebase
+    var favoritos by remember { mutableStateOf<List<FavoritoUI>>(emptyList()) }
+
+    // Cargar favoritos al entrar o actualizar ViewModel
+    LaunchedEffect(Unit) {
+        favoritos = repo.obtenerFavoritos()
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = 50.dp)
+            .padding(16.dp)
     ) {
 
-        // 🔵 TÍTULO
-        Text(
-            text = "Recomendaciones",
-            style = MaterialTheme.typography.headlineMedium.copy(
-                color = Color(0xFF33691E),
-                fontWeight = FontWeight.Bold
-            ),
-            modifier = Modifier.padding(start = 20.dp, bottom = 20.dp)
-        )
+        // ------------------ TÍTULO Y REFRESH ------------------
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Recomendaciones",
+                style = MaterialTheme.typography.headlineMedium,
+                color = Color(0xFF33691E)
+            )
 
-        if (recetasDemo.isEmpty()) {
-            // 🟡 Estado cuando no hay recomendaciones aún
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+            IconButton(
+                onClick = {
+                    viewModel.refrescarRecomendaciones()
+                    scope.launch { favoritos = repo.obtenerFavoritos() } // sincroniza favoritos
+                },
+                enabled = !cargando
             ) {
-                Text(
-                    text = "Aún no hay recomendaciones.\nCuando registres tus ingredientes, te sugeriremos recetas.",
-                    fontSize = 16.sp,
-                    color = Color.Gray
+                Icon(
+                    imageVector = Icons.Rounded.Refresh,
+                    contentDescription = "Refrescar",
+                    tint = if (cargando) Color.Gray else Color(0xFF33691E),
+                    modifier = Modifier.size(28.dp)
                 )
             }
-        } else {
+        }
 
-            // 🟢 LISTA DE RECOMENDACIONES
-            LazyColumn(
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // ------------------ LOADING ------------------
+        if (cargando) {
+            Column(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                items(recetasDemo) { receta ->
-                    TarjetaRecomendacion(receta)
-                }
+                CircularProgressIndicator(color = Color(0xFF33691E))
+                Spacer(modifier = Modifier.height(10.dp))
+                Text("Actualizando recomendaciones...", color = Color.Gray)
+            }
+            return
+        }
+
+        // ------------------ LISTADO ------------------
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            items(recetas) { meal ->
+
+                TarjetaRecomendacionMeal(
+                    meal = meal,
+                    favoritos = favoritos,
+                    onAgregarFavorito = { fav ->
+                        scope.launch {
+                            repo.agregarFavorito(fav)
+                            favoritos = repo.obtenerFavoritos() // actualizar pantalla
+                        }
+                    }
+                )
             }
         }
     }
 }
 
-// ---------------------------------------------------------------------------
-// 🎨 TARJETA DE RECOMENDACIÓN
-// ---------------------------------------------------------------------------
+/* =======================================================================
+   TARJETA INDIVIDUAL DE RECOMENDACIÓN
+   ======================================================================= */
 
 @Composable
-fun TarjetaRecomendacion(receta: RecetaRecomendada) {
+fun TarjetaRecomendacionMeal(
+    meal: Meal,
+    favoritos: List<FavoritoUI>,
+    onAgregarFavorito: (FavoritoUI) -> Unit
+) {
+    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+    val firestore = FirebaseFirestore.getInstance()
+
+    val esFavorito = favoritos.any { it.id == meal.idMeal }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(120.dp)
-            .clickable { /* TODO: acción futura */ },
+            .height(120.dp),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFF5F1DC)
-        ),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F1DC)),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
+
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(12.dp)
         ) {
 
-            // 🟤 Imagen de receta
+            // ------------------ IMAGEN ------------------
             Image(
-                painter = painterResource(id = receta.imagen),
-                contentDescription = receta.titulo,
+                painter = rememberAsyncImagePainter(meal.strMealThumb),
+                contentDescription = meal.strMeal,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(95.dp)
@@ -138,41 +160,69 @@ fun TarjetaRecomendacion(receta: RecetaRecomendada) {
 
             Spacer(modifier = Modifier.width(15.dp))
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            // ------------------ INFORMACIÓN ------------------
+            Column(modifier = Modifier.weight(1f)) {
 
-                // Nombre receta
                 Text(
-                    text = receta.titulo,
-                    fontWeight = FontWeight.Bold,
+                    text = meal.strMeal,
                     fontSize = 16.sp,
-                    color = Color.Black
+                    color = Color.Black,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                 )
 
-                // Categoría
                 Text(
-                    text = receta.categoria,
+                    text = meal.strCategory ?: "Sin categoría",
                     fontSize = 13.sp,
                     color = Color(0xFFB57F30),
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
 
-            // Botón tipo "ver receta"
-            Icon(
-                imageVector = Icons.Default.PlayArrow,
-                contentDescription = "Ver receta",
-                tint = Color(0xFFFF9800),
-                modifier = Modifier.size(32.dp)
-            )
+            // ------------------ ENVIAR A TV ------------------
+            IconButton(onClick = {
+
+                val receta = hashMapOf(
+                    "title" to meal.strMeal,
+                    "category" to (meal.strCategory ?: "Sin categoría"),
+                    "image" to (meal.strMealThumb ?: ""),
+                    "ingredients" to meal.getIngredientList(),
+                    "steps" to meal.getStepsList()
+                )
+
+                firestore.collection("usuarios")
+                    .document(uid)
+                    .collection("recetas")
+                    .document("actual")
+                    .set(receta)
+
+            }) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = "Enviar a TV",
+                    tint = Color(0xFFFF9800),
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+
+            // ------------------ FAVORITO ------------------
             IconButton(
-                onClick = {}
+                onClick = {
+                    if (!esFavorito) {
+                        onAgregarFavorito(
+                            FavoritoUI(
+                                id = meal.idMeal,
+                                nombre = meal.strMeal,
+                                categoria = meal.strCategory ?: "Sin categoría",
+                                imagen = meal.strMealThumb ?: ""
+                            )
+                        )
+                    }
+                }
             ) {
                 Icon(
                     imageVector = Icons.Default.Favorite,
-                    contentDescription = "Eliminar de favoritos",
-                    tint = Color.Red
+                    contentDescription = "Favorito",
+                    tint = if (esFavorito) Color.Red else Color.Gray
                 )
             }
         }
