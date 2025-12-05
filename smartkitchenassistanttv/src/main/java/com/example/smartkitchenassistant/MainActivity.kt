@@ -6,6 +6,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Button
+import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil.compose.AsyncImage
@@ -36,6 +40,7 @@ class TVMainActivity : ComponentActivity() {
         val auth = FirebaseAuth.getInstance()
         val currentUser = auth.currentUser
 
+        // Si no hay usuario → Ir al login
         if (currentUser == null) {
             startActivity(Intent(this, TVLoginActivity::class.java))
             finish()
@@ -45,6 +50,7 @@ class TVMainActivity : ComponentActivity() {
         val uid = currentUser.uid
         val recipeState = mutableStateOf<Recipe?>(null)
 
+        //  Listener Firestore
         listener = db.collection("usuarios")
             .document(uid)
             .collection("recetas")
@@ -61,12 +67,15 @@ class TVMainActivity : ComponentActivity() {
             val context = LocalContext.current
 
             MaterialTheme {
+
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Fondo),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
+
+                    // Pantalla con scroll
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -81,6 +90,10 @@ class TVMainActivity : ComponentActivity() {
 
                     Spacer(Modifier.height(8.dp))
 
+                    //  BOTÓN CERRAR SESIÓN — con highlight de foco
+                    val logoutSource = remember { MutableInteractionSource() }
+                    val logoutFocused by logoutSource.collectIsFocusedAsState()
+
                     Button(
                         onClick = {
                             auth.signOut()
@@ -89,8 +102,13 @@ class TVMainActivity : ComponentActivity() {
                         },
                         modifier = Modifier
                             .align(Alignment.CenterHorizontally)
+                            .focusable(interactionSource = logoutSource),
+                        colors = ButtonDefaults.colors(
+                            containerColor = if (logoutFocused) Color(0xFFCC8A00) else Acento,
+                            contentColor = Color.White
+                        )
                     ) {
-                        Text("Sign Out", color = TextoOscuro)
+                        Text("Sign Out")
                     }
                 }
             }
@@ -103,16 +121,20 @@ class TVMainActivity : ComponentActivity() {
     }
 }
 
-// -----------------------------
-// STEP TIMER
-// -----------------------------
+// TIMER CON FOCUS VISUAL
 @Composable
 fun PasoTimer(minutes: Int, TextoOscuro: Color, Acento: Color) {
+
     var remaining by remember { mutableStateOf(minutes * 60) }
     var running by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
+    //  Control de foco para el botón
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+
     Column(modifier = Modifier.padding(start = 16.dp, top = 8.dp)) {
+
         Button(
             onClick = {
                 if (!running) {
@@ -126,9 +148,11 @@ fun PasoTimer(minutes: Int, TextoOscuro: Color, Acento: Color) {
                     }
                 }
             },
-            modifier = Modifier.width(300.dp),
-            colors = androidx.tv.material3.ButtonDefaults.colors(
-                containerColor = Acento,
+            modifier = Modifier
+                .width(320.dp)
+                .focusable(interactionSource = interaction),
+            colors = ButtonDefaults.colors(
+                containerColor = if (focused) Color(0xFFCC8A00) else Acento,
                 contentColor = Color.White
             )
         ) {
@@ -150,9 +174,7 @@ fun PasoTimer(minutes: Int, TextoOscuro: Color, Acento: Color) {
 }
 
 
-// -----------------------------
-// MAIN RECIPE SCREEN
-// -----------------------------
+//  PANTALLA PRINCIPAL — SCROLL + FOCUS + HIGHLIGHT
 @Composable
 fun TVRecipeScreenStyled(
     recipe: Recipe?,
@@ -181,14 +203,17 @@ fun TVRecipeScreenStyled(
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
 
+        // Título
         item {
-            Text(
-                "SmartKitchenAssistant - TV",
+            FocusableText(
+                text = "SmartKitchenAssistant - TV",
                 style = MaterialTheme.typography.headlineLarge,
-                color = Acento
+                normalColor = Acento,
+                focusedColor = Color(0xFFCC8A00)
             )
         }
 
+        // Imagen
         item {
             AsyncImage(
                 model = recipe.image,
@@ -196,11 +221,13 @@ fun TVRecipeScreenStyled(
                 modifier = Modifier
                     .height(300.dp)
                     .fillMaxWidth()
+                    .focusable()
             )
         }
 
+        // Título + categoría
         item {
-            Column {
+            FocusableColumn {
                 Text(
                     recipe.title,
                     style = MaterialTheme.typography.headlineLarge,
@@ -214,57 +241,90 @@ fun TVRecipeScreenStyled(
             }
         }
 
+        // Ingredientes
         item {
-            Text(
-                "Ingredients",
+            FocusableText(
+                text = "Ingredients",
                 style = MaterialTheme.typography.titleLarge,
-                color = TextoOscuro
+                normalColor = TextoOscuro
             )
         }
 
         items(recipe.ingredients) { ing ->
-            Text(
-                "• $ing",
+            FocusableText(
+                text = "• $ing",
                 style = MaterialTheme.typography.bodyLarge,
-                color = TextoOscuro,
-                modifier = Modifier.padding(start = 16.dp)
+                normalColor = TextoOscuro
             )
         }
 
+        // Pasos
         item {
-            Text(
-                "Steps",
+            FocusableText(
+                text = "Steps",
                 style = MaterialTheme.typography.titleLarge,
-                color = TextoOscuro
+                normalColor = TextoOscuro
             )
         }
 
-        // -----------------------------
-        // STEPS + TIMER
-        // -----------------------------
         items(recipe.steps.size) { index ->
             val paso = recipe.steps[index]
 
-            // Detect minutes in both Spanish and English ("minutos", "min", "minutes")
-            val timeRegex = Regex("(\\d{1,3})\\s*(min|mins|minutes|minutos)")
-            val match = timeRegex.find(paso)
-            val minutosDetectados = match?.groupValues?.get(1)?.toIntOrNull()
+            val regex = Regex("(\\d{1,3})\\s*(min|mins|minutes|minutos)")
+            val minutesFound = regex.find(paso)?.groupValues?.get(1)?.toIntOrNull()
 
             Column(modifier = Modifier.padding(start = 16.dp)) {
-                Text(
-                    "${index + 1}. $paso",
+
+                FocusableText(
+                    text = "${index + 1}. $paso",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = TextoOscuro
+                    normalColor = TextoOscuro
                 )
 
-                if (minutosDetectados != null) {
+                if (minutesFound != null) {
                     PasoTimer(
-                        minutes = minutosDetectados,
+                        minutes = minutesFound,
                         TextoOscuro = TextoOscuro,
                         Acento = Acento
                     )
                 }
             }
         }
+    }
+}
+
+// COMPONENTE PARA TEXTOS CON EFECTO DE FOCO
+
+@Composable
+fun FocusableText(
+    text: String,
+    style: androidx.compose.ui.text.TextStyle,
+    normalColor: Color,
+    focusedColor: Color = Color(0xFF000000)
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+
+    Text(
+        text = text,
+        style = style,
+        color = if (focused) focusedColor else normalColor,
+        modifier = Modifier.focusable(interactionSource = interaction)
+    )
+}
+
+// COMPONENTE PARA COLUMNAS FOCUSABLE
+@Composable
+fun FocusableColumn(content: @Composable () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+
+    Column(
+        modifier = Modifier
+            .focusable(interactionSource = interaction)
+            .background(if (focused) Color(0x33CC8A00) else Color.Transparent)
+            .padding(4.dp)
+    ) {
+        content()
     }
 }
