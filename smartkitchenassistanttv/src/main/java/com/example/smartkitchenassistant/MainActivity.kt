@@ -6,7 +6,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,13 +22,12 @@ import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class TVMainActivity : ComponentActivity() {
 
-    // Instancia principal de Firestore
     private val db = FirebaseFirestore.getInstance()
-
-    // Guarda el listener para poder quitarlo cuando la pantalla se destruya
     private var listener: ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,7 +36,6 @@ class TVMainActivity : ComponentActivity() {
         val auth = FirebaseAuth.getInstance()
         val currentUser = auth.currentUser
 
-        // Si no hay usuario logueado, mandamos a la pantalla de login
         if (currentUser == null) {
             startActivity(Intent(this, TVLoginActivity::class.java))
             finish()
@@ -46,48 +43,35 @@ class TVMainActivity : ComponentActivity() {
         }
 
         val uid = currentUser.uid
-
-        // Estado que almacenará la receta recibida desde Firestore
         val recipeState = mutableStateOf<Recipe?>(null)
 
-        // Listener en tiempo real a Firestore para recibir la receta "actual"
         listener = db.collection("usuarios")
             .document(uid)
             .collection("recetas")
             .document("actual")
             .addSnapshotListener { snapshot, _ ->
-                // Cuando cambia el documento, actualiza la receta en el estado
-                recipeState.value =
-                    if (snapshot != null && snapshot.exists())
-                        snapshot.toObject(Recipe::class.java)
-                    else
-                        null
+                recipeState.value = snapshot?.toObject(Recipe::class.java)
             }
 
         setContent {
 
-            // Paleta de colores usada por la UI
             val Fondo = Color(0xFFF9F5F0)
             val Acento = Color(0xFFF4991A)
             val TextoOscuro = Color(0xFF344F1F)
-
             val context = LocalContext.current
 
             MaterialTheme {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Fondo), // Fondo general, sin bordes ni padding exterior
+                        .background(Fondo),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
-
-                    // Contenedor que ocupa la mayor parte de la pantalla
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
                     ) {
-                        // Se dibuja la receta si existe, o el mensaje "Esperando receta"
                         TVRecipeScreenStyled(
                             recipe = recipeState.value,
                             Acento = Acento,
@@ -97,7 +81,6 @@ class TVMainActivity : ComponentActivity() {
 
                     Spacer(Modifier.height(8.dp))
 
-                    // Botón para cerrar sesión en la TV
                     Button(
                         onClick = {
                             auth.signOut()
@@ -106,7 +89,6 @@ class TVMainActivity : ComponentActivity() {
                         },
                         modifier = Modifier
                             .align(Alignment.CenterHorizontally)
-                            .focusable() // Para navegación con control remoto
                     ) {
                         Text("Cerrar sesión", color = TextoOscuro)
                     }
@@ -116,13 +98,61 @@ class TVMainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        // Se elimina el listener cuando la activity se destruya
         listener?.remove()
         super.onDestroy()
     }
 }
 
-// UI de la pantalla de receta en TV
+// -----------------------------
+// TEMPORIZADOR FUNCIONAL POR PASO
+// -----------------------------
+@Composable
+fun PasoTimer(minutes: Int, TextoOscuro: Color, Acento: Color) {
+    var remaining by remember { mutableStateOf(minutes * 60) }
+    var running by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    Column(modifier = Modifier.padding(start = 16.dp, top = 8.dp)) {
+        Button(
+            onClick = {
+                if (!running) {
+                    running = true
+                    scope.launch {
+                        while (remaining > 0) {
+                            delay(1000)
+                            remaining--
+                        }
+                        running = false
+                    }
+                }
+            },
+            modifier = Modifier.width(300.dp), // ancho fijo, no ocupa toda la pantalla
+            colors = androidx.tv.material3.ButtonDefaults.colors(
+                containerColor = Acento,   // Fondo naranja
+                contentColor = Color.White  // Texto blanco
+            )
+        ) {
+            Text(
+                text = if (!running) "Iniciar temporizador ($minutes min)" else "Temporizador en curso",
+                style = MaterialTheme.typography.titleLarge
+            )
+        }
+
+        if (running || remaining != minutes * 60) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Tiempo restante: ${remaining / 60}m ${remaining % 60}s",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Acento
+            )
+        }
+    }
+}
+
+
+// -----------------------------
+// PANTALLA PRINCIPAL DE LA RECETA
+// -----------------------------
 @Composable
 fun TVRecipeScreenStyled(
     recipe: Recipe?,
@@ -130,24 +160,20 @@ fun TVRecipeScreenStyled(
     TextoOscuro: Color
 ) {
 
-    // Si aún no hay receta cargada, mostramos un mensaje centrado
     if (recipe == null) {
         Box(
-            modifier = Modifier
-                .fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 "Esperando receta…",
                 style = MaterialTheme.typography.headlineLarge,
-                color = TextoOscuro,
-                modifier = Modifier.focusable()
+                color = TextoOscuro
             )
         }
         return
     }
 
-    // Lista desplazable con toda la información de la receta
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -155,17 +181,14 @@ fun TVRecipeScreenStyled(
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
 
-        // Título superior de la app en pantalla
         item {
             Text(
-                "Smart Display - TV",
+                "SmartKitchenAssistant - TV",
                 style = MaterialTheme.typography.headlineLarge,
-                color = Acento,
-                modifier = Modifier.focusable()
+                color = Acento
             )
         }
 
-        // Imagen del platillo recibida desde Firebase
         item {
             AsyncImage(
                 model = recipe.image,
@@ -173,13 +196,11 @@ fun TVRecipeScreenStyled(
                 modifier = Modifier
                     .height(300.dp)
                     .fillMaxWidth()
-                    .focusable()
             )
         }
 
-        // Nombre del platillo y categoría
         item {
-            Column(Modifier.focusable()) {
+            Column {
                 Text(
                     recipe.title,
                     style = MaterialTheme.typography.headlineLarge,
@@ -193,48 +214,55 @@ fun TVRecipeScreenStyled(
             }
         }
 
-        // Título de ingredientes
         item {
             Text(
                 "Ingredientes",
                 style = MaterialTheme.typography.titleLarge,
-                color = TextoOscuro,
-                modifier = Modifier.focusable()
+                color = TextoOscuro
             )
         }
 
-        // Lista de ingredientes
         items(recipe.ingredients) { ing ->
             Text(
                 "• $ing",
                 style = MaterialTheme.typography.bodyLarge,
                 color = TextoOscuro,
-                modifier = Modifier
-                    .padding(start = 16.dp)
-                    .focusable()
+                modifier = Modifier.padding(start = 16.dp)
             )
         }
 
-        // Título de pasos
         item {
             Text(
                 "Pasos",
                 style = MaterialTheme.typography.titleLarge,
-                color = TextoOscuro,
-                modifier = Modifier.focusable()
+                color = TextoOscuro
             )
         }
 
-        // Lista de pasos numerados
+        // -----------------------------
+        // PASOS + TEMPORIZADOR
+        // -----------------------------
         items(recipe.steps.size) { index ->
-            Text(
-                "${index + 1}. ${recipe.steps[index]}",
-                style = MaterialTheme.typography.bodyLarge,
-                color = TextoOscuro,
-                modifier = Modifier
-                    .padding(start = 16.dp)
-                    .focusable()
-            )
+            val paso = recipe.steps[index]
+            val timeRegex = Regex("(\\d{1,3})\\s*(min|mins|minutes|minutos)")
+            val match = timeRegex.find(paso)
+            val minutosDetectados = match?.groupValues?.get(1)?.toIntOrNull()
+
+            Column(modifier = Modifier.padding(start = 16.dp)) {
+                Text(
+                    "${index + 1}. $paso",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = TextoOscuro
+                )
+
+                if (minutosDetectados != null) {
+                    PasoTimer(
+                        minutes = minutosDetectados,
+                        TextoOscuro = TextoOscuro,
+                        Acento = Acento
+                    )
+                }
+            }
         }
     }
 }
