@@ -46,7 +46,7 @@ fun DespensaScreen(viewModel: DespensaViewModel = viewModel()) {
     ) {
 
         Text(
-            text = "Mi despensa",
+            text = "My Pantry",
             style = MaterialTheme.typography.titleLarge,
             fontSize = 26.sp,
             color = verde
@@ -57,11 +57,11 @@ fun DespensaScreen(viewModel: DespensaViewModel = viewModel()) {
         OutlinedTextField(
             value = nuevoIngrediente,
             onValueChange = { nuevoIngrediente = it },
-            label = { Text("Ingrediente", color = verde) },
-            placeholder = { Text("Ejemplo: Tomate") },
+            label = { Text("Ingredient", color = verde) },
+            placeholder = { Text("Example: Tomato") },
             singleLine = true,
             leadingIcon = {
-                Icon(Icons.Default.Search, contentDescription = "Agregar", tint = verde)
+                Icon(Icons.Default.Search, contentDescription = "Add", tint = verde)
             },
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
@@ -76,8 +76,8 @@ fun DespensaScreen(viewModel: DespensaViewModel = viewModel()) {
         OutlinedTextField(
             value = nuevaCantidad,
             onValueChange = { nuevaCantidad = it },
-            label = { Text("Cantidad", color = verde) },
-            placeholder = { Text("Ejemplo: 2 kg, 3 piezas...") },
+            label = { Text("Quantity", color = verde) },
+            placeholder = { Text("Example: 2 kg, 3 pieces...") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
@@ -106,7 +106,7 @@ fun DespensaScreen(viewModel: DespensaViewModel = viewModel()) {
             ),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Agregar ingrediente")
+            Text("Add Ingredient")
         }
 
         Spacer(modifier = Modifier.height(22.dp))
@@ -163,7 +163,7 @@ fun DespensaScreen(viewModel: DespensaViewModel = viewModel()) {
                     ) {
                         Icon(
                             imageVector = Icons.Default.Edit,
-                            contentDescription = "Editar ingrediente",
+                            contentDescription = "Edit ingredient",
                             tint = verde
                         )
                     }
@@ -171,7 +171,7 @@ fun DespensaScreen(viewModel: DespensaViewModel = viewModel()) {
                     IconButton(onClick = { viewModel.eliminarIngrediente(ingrediente) }) {
                         Icon(
                             Icons.Default.Delete,
-                            contentDescription = "Eliminar",
+                            contentDescription = "Delete",
                             tint = Color.Red
                         )
                     }
@@ -181,7 +181,7 @@ fun DespensaScreen(viewModel: DespensaViewModel = viewModel()) {
 
         if (ingredientes.isEmpty()) {
             Text(
-                text = "Tu despensa está vacía",
+                text = "Your pantry is empty",
                 color = verde,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 20.dp)
@@ -192,19 +192,19 @@ fun DespensaScreen(viewModel: DespensaViewModel = viewModel()) {
     if (ingredienteAEditar != null) {
         AlertDialog(
             onDismissRequest = { ingredienteAEditar = null },
-            title = { Text("Editar ingrediente") },
+            title = { Text("Edit Ingredient") },
             text = {
                 Column {
                     TextField(
                         value = textoEditado,
                         onValueChange = { textoEditado = it },
-                        placeholder = { Text("Nuevo nombre") }
+                        placeholder = { Text("New name") }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     TextField(
                         value = cantidadEditada,
                         onValueChange = { cantidadEditada = it },
-                        placeholder = { Text("Cantidad") }
+                        placeholder = { Text("Quantity") }
                     )
                 }
             },
@@ -219,12 +219,12 @@ fun DespensaScreen(viewModel: DespensaViewModel = viewModel()) {
                     }
                     ingredienteAEditar = null
                 }) {
-                    Text("Guardar")
+                    Text("Save")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { ingredienteAEditar = null }) {
-                    Text("Cancelar")
+                    Text("Cancel")
                 }
             }
         )
