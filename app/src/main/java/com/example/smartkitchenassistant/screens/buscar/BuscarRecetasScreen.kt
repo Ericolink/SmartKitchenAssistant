@@ -144,8 +144,8 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
                             "title" to meal.strMeal,
                             "category" to (meal.strCategory ?: "Sin categoría"),
                             "image" to (meal.strMealThumb ?: ""),
-                            "ingredients" to listOf("Cargando ingredientes..."),
-                            "steps" to listOf("Cargando pasos...")
+                            "ingredients" to meal.getIngredientList(),
+                            "steps" to meal.getStepsList()
                         )
 
                         FirebaseFirestore.getInstance()

@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.example.smartkitchenassistant.data.FavoritosRepository
+import com.example.smartkitchenassistant.data.network.RetrofitInstance
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
@@ -118,24 +119,32 @@ fun FavoritosScreen() {
 
                         // Botón reproducir
                         IconButton(onClick = {
-
                             if (uid == null) return@IconButton
 
-                            val receta = hashMapOf(
-                                "title" to fav.nombre,
-                                "category" to fav.categoria,
-                                "image" to fav.imagen,
-                                "ingredients" to listOf("Cargando ingredientes..."),
-                                "steps" to listOf("Cargando pasos...")
-                            )
+                            scope.launch {
+                                // Descarga la receta completa desde TheMealDB
+                                val resp = RetrofitInstance.api.getMealById(fav.id)
+                                val meal = resp.meals?.firstOrNull()
 
-                            FirebaseFirestore.getInstance()
-                                .collection("usuarios")
-                                .document(uid)
-                                .collection("recetas")
-                                .document("actual")
-                                .set(receta)
+                                if (meal != null) {
 
+                                    val receta = hashMapOf(
+                                        "title" to meal.strMeal,
+                                        "category" to (meal.strCategory ?: "Sin categoría"),
+                                        "image" to (meal.strMealThumb ?: ""),
+                                        "ingredients" to meal.getIngredientList(),
+                                        "steps" to meal.getStepsList()
+                                    )
+
+                                    // Enviar a la TV
+                                    FirebaseFirestore.getInstance()
+                                        .collection("usuarios")
+                                        .document(uid)
+                                        .collection("recetas")
+                                        .document("actual")
+                                        .set(receta)
+                                }
+                            }
                         }) {
                             Icon(Icons.Default.PlayArrow, "Enviar a TV", tint = naranja)
                         }
