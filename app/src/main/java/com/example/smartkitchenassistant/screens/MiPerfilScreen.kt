@@ -36,7 +36,6 @@ fun MiPerfilScreen() {
     val user = auth.currentUser
     val db = FirebaseFirestore.getInstance()
 
-    // 👉 Estados del perfil
     var nombreUsuario by remember { mutableStateOf("") }
     var nombreCompleto by remember { mutableStateOf("") }
     var correo by remember { mutableStateOf(user?.email ?: "") }
@@ -47,7 +46,6 @@ fun MiPerfilScreen() {
     var modoEdicion by remember { mutableStateOf(false) }
     var cargando by remember { mutableStateOf(false) }
 
-    // 👉 Launcher para seleccionar imagen
     val launcherGaleria = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
@@ -57,23 +55,21 @@ fun MiPerfilScreen() {
                 if (url != null) {
                     fotoPerfilUrl = url
 
-                    // 👉 Guardamos AUTOMÁTICAMENTE en Firestore
                     user?.uid?.let { uid ->
                         db.collection("usuarios").document(uid)
                             .update("fotoPerfilUrl", url)
                             .addOnSuccessListener {
-                                mensajeGuardado = "Foto actualizada ✔"
+                                mensajeGuardado = "Photo updated ✔"
                             }
                     }
                 } else {
-                    mensajeGuardado = "Error al subir la imagen"
+                    mensajeGuardado = "Error uploading image"
                 }
                 cargando = false
             }
         }
     }
 
-    // 👉 Cargar datos al entrar
     LaunchedEffect(user?.uid) {
         user?.uid?.let { uid ->
             db.collection("usuarios").document(uid)
@@ -97,7 +93,6 @@ fun MiPerfilScreen() {
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 👉 FOTO DE PERFIL
         Box(
             modifier = Modifier
                 .size(130.dp)
@@ -108,12 +103,12 @@ fun MiPerfilScreen() {
             if (fotoPerfilUrl != null) {
                 Image(
                     painter = rememberAsyncImagePainter(fotoPerfilUrl),
-                    contentDescription = "Foto de perfil",
+                    contentDescription = "Profile photo",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
             } else {
-                Text("FOTO", fontSize = 16.sp, color = Color.DarkGray)
+                Text("PHOTO", fontSize = 16.sp, color = Color.DarkGray)
             }
         }
 
@@ -123,21 +118,14 @@ fun MiPerfilScreen() {
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
 
-            // 👉 BOTÓN SUBIR FOTO
-            OutlinedButton(
-                onClick = { launcherGaleria.launch("image/*") }
-            ) {
-                Text("Subir")
+            OutlinedButton(onClick = { launcherGaleria.launch("image/*") }) {
+                Text("Upload")
             }
 
-            // 👉 BOTÓN ACTUALIZAR FOTO
-            OutlinedButton(
-                onClick = { launcherGaleria.launch("image/*") }
-            ) {
-                Text("Actualizar")
+            OutlinedButton(onClick = { launcherGaleria.launch("image/*") }) {
+                Text("Update")
             }
 
-            // 👉 BOTÓN ELIMINAR FOTO
             OutlinedButton(
                 onClick = {
                     fotoPerfilUrl = null
@@ -146,11 +134,11 @@ fun MiPerfilScreen() {
                         db.collection("usuarios")
                             .document(uid)
                             .update("fotoPerfilUrl", null)
-                        mensajeGuardado = "Foto eliminada ✔"
+                        mensajeGuardado = "Photo deleted ✔"
                     }
                 }
             ) {
-                Text("Eliminar")
+                Text("Delete")
             }
         }
 
@@ -161,7 +149,6 @@ fun MiPerfilScreen() {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // 👉 TARJETA PROFESIONAL DE PERFIL
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
@@ -170,7 +157,7 @@ fun MiPerfilScreen() {
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Text(
-                    "Información del Perfil",
+                    "Profile Information",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF333333)
@@ -178,25 +165,23 @@ fun MiPerfilScreen() {
                 Spacer(modifier = Modifier.height(15.dp))
 
                 if (!modoEdicion) {
-                    // MODO LECTURA
-                    PerfilDatoItem("Nombre de usuario", nombreUsuario)
-                    PerfilDatoItem("Nombre completo", nombreCompleto)
-                    PerfilDatoItem("Correo", correo)
-                    PerfilDatoItem("Teléfono", telefono)
-                    PerfilDatoItem("Descripción", descripcion)
+                    PerfilDatoItem("Username", nombreUsuario)
+                    PerfilDatoItem("Full name", nombreCompleto)
+                    PerfilDatoItem("Email", correo)
+                    PerfilDatoItem("Phone", telefono)
+                    PerfilDatoItem("Description", descripcion)
                 } else {
-                    // MODO EDICIÓN
                     OutlinedTextField(
                         value = nombreUsuario,
                         onValueChange = { nombreUsuario = it },
-                        label = { Text("Nombre de usuario") },
+                        label = { Text("Username") },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     OutlinedTextField(
                         value = nombreCompleto,
                         onValueChange = { nombreCompleto = it },
-                        label = { Text("Nombre completo") },
+                        label = { Text("Full name") },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(12.dp))
@@ -204,21 +189,21 @@ fun MiPerfilScreen() {
                         value = correo,
                         onValueChange = {},
                         enabled = false,
-                        label = { Text("Correo") },
+                        label = { Text("Email") },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     OutlinedTextField(
                         value = telefono,
                         onValueChange = { telefono = it },
-                        label = { Text("Teléfono") },
+                        label = { Text("Phone") },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     OutlinedTextField(
                         value = descripcion,
                         onValueChange = { descripcion = it },
-                        label = { Text("Descripción breve") },
+                        label = { Text("Short description") },
                         modifier = Modifier.fillMaxWidth(),
                         maxLines = 3
                     )
@@ -228,13 +213,12 @@ fun MiPerfilScreen() {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // 👉 BOTÓNES
         if (!modoEdicion) {
             Button(
                 onClick = { modoEdicion = true },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Editar datos")
+                Text("Edit profile")
             }
         } else {
             Button(
@@ -250,21 +234,21 @@ fun MiPerfilScreen() {
                         db.collection("usuarios").document(uid)
                             .update(datosActualizados)
                             .addOnSuccessListener {
-                                mensajeGuardado = "Perfil actualizado correctamente ✔"
+                                mensajeGuardado = "Profile updated successfully ✔"
                                 modoEdicion = false
                             }
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Guardar cambios")
+                Text("Save changes")
             }
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedButton(
                 onClick = { modoEdicion = false },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Cancelar")
+                Text("Cancel")
             }
         }
 
@@ -284,7 +268,7 @@ fun PerfilDatoItem(titulo: String, valor: String) {
     Column(modifier = Modifier.padding(bottom = 12.dp)) {
         Text(titulo, fontSize = 13.sp, color = Color.Gray)
         Text(
-            valor.ifEmpty { "Sin información" },
+            valor.ifEmpty { "No information" },
             fontSize = 17.sp,
             fontWeight = FontWeight.Medium,
             color = Color(0xFF222222)
@@ -297,13 +281,12 @@ fun PerfilDatoItem(titulo: String, valor: String) {
     }
 }
 
-// 👉 FUNCIÓN PARA SUBIR IMAGEN A CLOUDINARY
 fun subirImagenCloudinary(
     uri: Uri,
     onResult: (String?) -> Unit
 ) {
     val requestId = MediaManager.get().upload(uri)
-        .unsigned("perfil_preset") // tu preset de Cloudinary
+        .unsigned("perfil_preset")
         .callback(object : UploadCallback {
             override fun onStart(requestId: String?) {}
             override fun onProgress(requestId: String?, bytes: Long, totalBytes: Long) {}

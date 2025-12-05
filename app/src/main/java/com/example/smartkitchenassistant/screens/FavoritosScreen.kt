@@ -27,7 +27,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun FavoritosScreen() {
 
-    // Paleta de colores
     val primario = Color(0xFFF9F5F0)
     val secundario = Color(0xFFF2EAD3)
     val naranja = Color(0xFFF4991A)
@@ -36,12 +35,10 @@ fun FavoritosScreen() {
     val repo = FavoritosRepository()
     val scope = rememberCoroutineScope()
 
-    // Lista que viene de Firebase
     var favoritos by remember { mutableStateOf<List<FavoritoUI>>(emptyList()) }
 
     val uid = FirebaseAuth.getInstance().currentUser?.uid
 
-    // Cargar datos al entrar
     LaunchedEffect(Unit) {
         favoritos = repo.obtenerFavoritos()
     }
@@ -53,9 +50,8 @@ fun FavoritosScreen() {
             .padding(16.dp)
     ) {
 
-        // Título
         Text(
-            text = "Recetas favoritas",
+            text = "Favorite recipes",
             style = MaterialTheme.typography.titleLarge,
             fontSize = 26.sp,
             color = verde
@@ -69,7 +65,7 @@ fun FavoritosScreen() {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Aún no tienes recetas favoritas",
+                    text = "You don't have favorite recipes yet",
                     fontSize = 18.sp,
                     color = verde
                 )
@@ -90,7 +86,6 @@ fun FavoritosScreen() {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
 
-                        // Imagen
                         Image(
                             painter = rememberAsyncImagePainter(fav.imagen),
                             contentDescription = fav.nombre,
@@ -101,7 +96,6 @@ fun FavoritosScreen() {
 
                         Spacer(modifier = Modifier.width(12.dp))
 
-                        // Info
                         Column(
                             modifier = Modifier.weight(1f)
                         ) {
@@ -117,12 +111,10 @@ fun FavoritosScreen() {
                             )
                         }
 
-                        // Botón reproducir
                         IconButton(onClick = {
                             if (uid == null) return@IconButton
 
                             scope.launch {
-                                // Descarga la receta completa desde TheMealDB
                                 val resp = RetrofitInstance.api.getMealById(fav.id)
                                 val meal = resp.meals?.firstOrNull()
 
@@ -130,13 +122,12 @@ fun FavoritosScreen() {
 
                                     val receta = hashMapOf(
                                         "title" to meal.strMeal,
-                                        "category" to (meal.strCategory ?: "Sin categoría"),
+                                        "category" to (meal.strCategory ?: "No category"),
                                         "image" to (meal.strMealThumb ?: ""),
                                         "ingredients" to meal.getIngredientList(),
                                         "steps" to meal.getStepsList()
                                     )
 
-                                    // Enviar a la TV
                                     FirebaseFirestore.getInstance()
                                         .collection("usuarios")
                                         .document(uid)
@@ -146,10 +137,9 @@ fun FavoritosScreen() {
                                 }
                             }
                         }) {
-                            Icon(Icons.Default.PlayArrow, "Enviar a TV", tint = naranja)
+                            Icon(Icons.Default.PlayArrow, "Send to TV", tint = naranja)
                         }
 
-                        // Botón eliminar favorito
                         IconButton(
                             onClick = {
                                 scope.launch {
@@ -160,7 +150,7 @@ fun FavoritosScreen() {
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Favorite,
-                                contentDescription = "Eliminar de favoritos",
+                                contentDescription = "Remove from favorites",
                                 tint = Color.Red
                             )
                         }

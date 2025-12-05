@@ -63,7 +63,7 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
     ) {
 
         Text(
-            text = "Buscar recetas",
+            text = "Search recipes",
             style = MaterialTheme.typography.titleLarge,
             fontSize = 26.sp,
             color = verde
@@ -108,8 +108,8 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
                     }
                 }
             },
-            label = { Text("Buscar receta...", color = verde) },
-            placeholder = { Text("Ejemplo: pizza") },
+            label = { Text("Search recipe..", color = verde) },
+            placeholder = { Text("Example: pizza") },
             singleLine = true,
             leadingIcon = {
                 Icon(imageVector = Icons.Default.Search, contentDescription = null)
@@ -174,7 +174,7 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
 
                         val receta = hashMapOf(
                             "title" to meal.strMeal,
-                            "category" to (meal.strCategory ?: "Sin categoría"),
+                            "category" to (meal.strCategory ?: "No category"),
                             "image" to (meal.strMealThumb ?: ""),
                             "ingredients" to meal.getIngredientList(),
                             "steps" to meal.getStepsList()
@@ -189,7 +189,7 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
                     }) {
                         Icon(
                             imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "Enviar a TV",
+                            contentDescription = "Send to TV",
                             tint = naranja
                         )
                     }
@@ -211,7 +211,7 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
                                         FavoritoUI(
                                             id = meal.idMeal,
                                             nombre = meal.strMeal,
-                                            categoria = meal.strCategory ?: "Sin categoría",
+                                            categoria = meal.strCategory ?: "No category",
                                             imagen = meal.strMealThumb ?: ""
                                         )
                                     )
@@ -221,7 +221,7 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
                     ) {
                         Icon(
                             imageVector = if (esFavorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "Favorito",
+                            contentDescription = "Favorite",
                             tint = if (esFavorito) Color.Red else verde
                         )
                     }
@@ -231,7 +231,7 @@ fun BuscarRecetasScreen(viewModel: BuscarRecetasViewModel = viewModel()) {
 
         if (meals.isEmpty() && query.text.isNotEmpty()) {
             Text(
-                text = "No se encontraron recetas para \"${query.text}\"",
+                text = "No recipes found for \"${query.text}\"",
                 color = verde,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 20.dp)

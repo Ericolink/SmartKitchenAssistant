@@ -90,7 +90,7 @@ class TVMainActivity : ComponentActivity() {
                         modifier = Modifier
                             .align(Alignment.CenterHorizontally)
                     ) {
-                        Text("Cerrar sesión", color = TextoOscuro)
+                        Text("Sign Out", color = TextoOscuro)
                     }
                 }
             }
@@ -104,7 +104,7 @@ class TVMainActivity : ComponentActivity() {
 }
 
 // -----------------------------
-// TEMPORIZADOR FUNCIONAL POR PASO
+// STEP TIMER
 // -----------------------------
 @Composable
 fun PasoTimer(minutes: Int, TextoOscuro: Color, Acento: Color) {
@@ -126,14 +126,14 @@ fun PasoTimer(minutes: Int, TextoOscuro: Color, Acento: Color) {
                     }
                 }
             },
-            modifier = Modifier.width(300.dp), // ancho fijo, no ocupa toda la pantalla
+            modifier = Modifier.width(300.dp),
             colors = androidx.tv.material3.ButtonDefaults.colors(
-                containerColor = Acento,   // Fondo naranja
-                contentColor = Color.White  // Texto blanco
+                containerColor = Acento,
+                contentColor = Color.White
             )
         ) {
             Text(
-                text = if (!running) "Iniciar temporizador ($minutes min)" else "Temporizador en curso",
+                text = if (!running) "Start timer ($minutes min)" else "Timer running",
                 style = MaterialTheme.typography.titleLarge
             )
         }
@@ -141,7 +141,7 @@ fun PasoTimer(minutes: Int, TextoOscuro: Color, Acento: Color) {
         if (running || remaining != minutes * 60) {
             Spacer(Modifier.height(8.dp))
             Text(
-                "Tiempo restante: ${remaining / 60}m ${remaining % 60}s",
+                "Time remaining: ${remaining / 60}m ${remaining % 60}s",
                 style = MaterialTheme.typography.bodyLarge,
                 color = Acento
             )
@@ -151,7 +151,7 @@ fun PasoTimer(minutes: Int, TextoOscuro: Color, Acento: Color) {
 
 
 // -----------------------------
-// PANTALLA PRINCIPAL DE LA RECETA
+// MAIN RECIPE SCREEN
 // -----------------------------
 @Composable
 fun TVRecipeScreenStyled(
@@ -166,7 +166,7 @@ fun TVRecipeScreenStyled(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                "Esperando receta…",
+                "Waiting for recipe…",
                 style = MaterialTheme.typography.headlineLarge,
                 color = TextoOscuro
             )
@@ -207,7 +207,7 @@ fun TVRecipeScreenStyled(
                     color = TextoOscuro
                 )
                 Text(
-                    "Categoría: ${recipe.category}",
+                    "Category: ${recipe.category}",
                     style = MaterialTheme.typography.headlineMedium,
                     color = Acento
                 )
@@ -216,7 +216,7 @@ fun TVRecipeScreenStyled(
 
         item {
             Text(
-                "Ingredientes",
+                "Ingredients",
                 style = MaterialTheme.typography.titleLarge,
                 color = TextoOscuro
             )
@@ -233,17 +233,19 @@ fun TVRecipeScreenStyled(
 
         item {
             Text(
-                "Pasos",
+                "Steps",
                 style = MaterialTheme.typography.titleLarge,
                 color = TextoOscuro
             )
         }
 
         // -----------------------------
-        // PASOS + TEMPORIZADOR
+        // STEPS + TIMER
         // -----------------------------
         items(recipe.steps.size) { index ->
             val paso = recipe.steps[index]
+
+            // Detect minutes in both Spanish and English ("minutos", "min", "minutes")
             val timeRegex = Regex("(\\d{1,3})\\s*(min|mins|minutes|minutos)")
             val match = timeRegex.find(paso)
             val minutosDetectados = match?.groupValues?.get(1)?.toIntOrNull()

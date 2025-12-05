@@ -34,7 +34,6 @@ fun loginScreen(
     onClickRegister: () -> Unit = {},
     onSuccessfulLogin: () -> Unit = {}
 ) {
-    // 🎨 PALETA DE COLORES
     val Primario = Color(0xFFF9F5F0)
     val Secundario = Color(0xFFF2EAD3)
     val naranja = Color(0xFFF4991A)
@@ -43,7 +42,6 @@ fun loginScreen(
     val auth = Firebase.auth
     val activity = LocalView.current.context as Activity
 
-    // Estados
     var inputEmail by remember { mutableStateOf("") }
     var inputPassword by remember { mutableStateOf("") }
     var loginError by remember { mutableStateOf("") }
@@ -51,7 +49,6 @@ fun loginScreen(
     var emailError by remember { mutableStateOf("") }
     var passwordError by remember { mutableStateOf("") }
 
-    // Reset password dialog
     var showResetDialog by remember { mutableStateOf(false) }
     var resetEmail by remember { mutableStateOf("") }
     var resetMessage by remember { mutableStateOf("") }
@@ -72,7 +69,6 @@ fun loginScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // LOGO
             Image(
                 painter = painterResource(id = R.drawable.logo1),
                 contentDescription = "Logo",
@@ -81,7 +77,6 @@ fun loginScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // CARD CENTRAL ELEVADO (Diseño Modern UI)
             Card(
                 modifier = Modifier
                     .padding(horizontal = 28.dp)
@@ -98,7 +93,7 @@ fun loginScreen(
                 ) {
 
                     Text(
-                        text = "Bienvenido",
+                        text = "Welcome",
                         fontSize = 26.sp,
                         fontWeight = FontWeight.Bold,
                         color = verde
@@ -107,18 +102,17 @@ fun loginScreen(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Inicia sesión en tu cuenta",
+                        text = "Sign in to your account",
                         fontSize = 15.sp,
                         color = verde.copy(alpha = 0.7f)
                     )
 
                     Spacer(modifier = Modifier.height(22.dp))
 
-                    // EMAIL
                     OutlinedTextField(
                         value = inputEmail,
                         onValueChange = { inputEmail = it },
-                        label = { Text("Correo electrónico", color = verde) },
+                        label = { Text("Email", color = verde) },
                         leadingIcon = {
                             Icon(Icons.Default.Email, contentDescription = null, tint = verde)
                         },
@@ -141,11 +135,10 @@ fun loginScreen(
 
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    // PASSWORD
                     OutlinedTextField(
                         value = inputPassword,
                         onValueChange = { inputPassword = it },
-                        label = { Text("Contraseña", color = verde) },
+                        label = { Text("Password", color = verde) },
                         leadingIcon = {
                             Icon(Icons.Default.Lock, contentDescription = null, tint = verde)
                         },
@@ -176,7 +169,6 @@ fun loginScreen(
                         )
                     }
 
-                    // BOTÓN LOGIN (moderno)
                     Button(
                         onClick = {
                             val validEmail = validateEmail(inputEmail)
@@ -193,14 +185,14 @@ fun loginScreen(
                                             if (user != null && user.isEmailVerified) {
                                                 onSuccessfulLogin()
                                             } else {
-                                                loginError = "Debes verificar tu correo."
+                                                loginError = "You must verify your email."
                                                 auth.signOut()
                                             }
                                         } else {
                                             loginError = when (task.exception) {
-                                                is FirebaseAuthInvalidCredentialsException -> "Correo o contraseña incorrecta"
-                                                is FirebaseAuthInvalidUserException -> "No existe una cuenta con este correo"
-                                                else -> "Error al iniciar sesión"
+                                                is FirebaseAuthInvalidCredentialsException -> "Incorrect email or password"
+                                                is FirebaseAuthInvalidUserException -> "No account found with this email"
+                                                else -> "Error signing in"
                                             }
                                         }
                                     }
@@ -219,21 +211,19 @@ fun loginScreen(
                             pressedElevation = 10.dp
                         )
                     ) {
-                        Text("Iniciar Sesión", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Sign In", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // REGISTRO
                     TextButton(onClick = onClickRegister) {
-                        Text("¿No tienes cuenta? Regístrate", color = verde)
+                        Text("Don't have an account? Register", color = verde)
                     }
 
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    // RESET PASSWORD
                     TextButton(onClick = { showResetDialog = true }) {
-                        Text("Olvidé mi contraseña", color = verde)
+                        Text("Forgot my password", color = verde)
                     }
                 }
             }
@@ -241,7 +231,6 @@ fun loginScreen(
             Spacer(modifier = Modifier.height(40.dp))
         }
 
-        // 🔐 DIALOG RESETEAR CONTRASEÑA
         if (showResetDialog) {
             AlertDialog(
                 onDismissRequest = { showResetDialog = false },
@@ -249,26 +238,26 @@ fun loginScreen(
                     TextButton(onClick = {
                         if (resetEmail.isNotEmpty()) {
                             auth.sendPasswordResetEmail(resetEmail)
-                            resetMessage = "Correo de recuperación enviado."
+                            resetMessage = "Recovery email sent."
                         } else {
-                            resetMessage = "Ingresa un correo válido."
+                            resetMessage = "Enter a valid email."
                         }
                         showResetDialog = false
                     }) {
-                        Text("Enviar", color = naranja)
+                        Text("Send", color = naranja)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showResetDialog = false }) {
-                        Text("Cancelar", color = verde)
+                        Text("Cancel", color = verde)
                     }
                 },
-                title = { Text("Restablecer contraseña") },
+                title = { Text("Reset Password") },
                 text = {
                     OutlinedTextField(
                         value = resetEmail,
                         onValueChange = { resetEmail = it },
-                        label = { Text("Correo electrónico") }
+                        label = { Text("Email") }
                     )
                 }
             )

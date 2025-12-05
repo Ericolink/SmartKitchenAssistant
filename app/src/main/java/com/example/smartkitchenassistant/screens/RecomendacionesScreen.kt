@@ -28,7 +28,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 
 // ============================================================
-//                    PANTALLA COMPLETA
+//                    FULL SCREEN
 // ============================================================
 
 @Composable
@@ -41,10 +41,10 @@ fun RecomendacionesScreen(
     val repo = FavoritosRepository()
     val scope = rememberCoroutineScope()
 
-    // Lista de favoritos desde Firebase
+    // Favorite list from Firebase
     var favoritos by remember { mutableStateOf<List<FavoritoUI>>(emptyList()) }
 
-    // Cargar favoritos al entrar o actualizar ViewModel
+    // Load favorites on launch or refresh
     LaunchedEffect(Unit) {
         favoritos = repo.obtenerFavoritos()
     }
@@ -55,14 +55,14 @@ fun RecomendacionesScreen(
             .padding(16.dp)
     ) {
 
-        // ------------------ TÍTULO Y REFRESH ------------------
+        // ------------------ TITLE + REFRESH ------------------
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Recomendaciones",
+                text = "Recommendations",
                 style = MaterialTheme.typography.headlineMedium,
                 color = Color(0xFF33691E)
             )
@@ -70,13 +70,13 @@ fun RecomendacionesScreen(
             IconButton(
                 onClick = {
                     viewModel.refrescarRecomendaciones()
-                    scope.launch { favoritos = repo.obtenerFavoritos() } // sincroniza favoritos
+                    scope.launch { favoritos = repo.obtenerFavoritos() } // sync favorites
                 },
                 enabled = !cargando
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Refresh,
-                    contentDescription = "Refrescar",
+                    contentDescription = "Refresh",
                     tint = if (cargando) Color.Gray else Color(0xFF33691E),
                     modifier = Modifier.size(28.dp)
                 )
@@ -94,12 +94,12 @@ fun RecomendacionesScreen(
             ) {
                 CircularProgressIndicator(color = Color(0xFF33691E))
                 Spacer(modifier = Modifier.height(10.dp))
-                Text("Actualizando recomendaciones...", color = Color.Gray)
+                Text("Updating recommendations...", color = Color.Gray)
             }
             return
         }
 
-        // ------------------ LISTADO ------------------
+        // ------------------ LIST ------------------
         LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             items(recetas) { meal ->
 
@@ -109,7 +109,7 @@ fun RecomendacionesScreen(
                     onAgregarFavorito = { fav ->
                         scope.launch {
                             repo.agregarFavorito(fav)
-                            favoritos = repo.obtenerFavoritos() // actualizar pantalla
+                            favoritos = repo.obtenerFavoritos() // update list
                         }
                     }
                 )
@@ -119,7 +119,7 @@ fun RecomendacionesScreen(
 }
 
 /* =======================================================================
-   TARJETA INDIVIDUAL DE RECOMENDACIÓN
+   SINGLE RECOMMENDATION CARD
    ======================================================================= */
 
 @Composable
@@ -147,7 +147,7 @@ fun TarjetaRecomendacionMeal(
             modifier = Modifier.padding(12.dp)
         ) {
 
-            // ------------------ IMAGEN ------------------
+            // ------------------ IMAGE ------------------
             Image(
                 painter = rememberAsyncImagePainter(meal.strMealThumb),
                 contentDescription = meal.strMeal,
@@ -160,7 +160,7 @@ fun TarjetaRecomendacionMeal(
 
             Spacer(modifier = Modifier.width(15.dp))
 
-            // ------------------ INFORMACIÓN ------------------
+            // ------------------ INFO ------------------
             Column(modifier = Modifier.weight(1f)) {
 
                 Text(
@@ -171,19 +171,19 @@ fun TarjetaRecomendacionMeal(
                 )
 
                 Text(
-                    text = meal.strCategory ?: "Sin categoría",
+                    text = meal.strCategory ?: "No category",
                     fontSize = 13.sp,
                     color = Color(0xFFB57F30),
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
 
-            // ------------------ ENVIAR A TV ------------------
+            // ------------------ SEND TO TV ------------------
             IconButton(onClick = {
 
                 val receta = hashMapOf(
                     "title" to meal.strMeal,
-                    "category" to (meal.strCategory ?: "Sin categoría"),
+                    "category" to (meal.strCategory ?: "No category"),
                     "image" to (meal.strMealThumb ?: ""),
                     "ingredients" to meal.getIngredientList(),
                     "steps" to meal.getStepsList()
@@ -198,13 +198,13 @@ fun TarjetaRecomendacionMeal(
             }) {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Enviar a TV",
+                    contentDescription = "Send to TV",
                     tint = Color(0xFFFF9800),
                     modifier = Modifier.size(32.dp)
                 )
             }
 
-            // ------------------ FAVORITO ------------------
+            // ------------------ FAVORITE ------------------
             IconButton(
                 onClick = {
                     if (!esFavorito) {
@@ -212,7 +212,7 @@ fun TarjetaRecomendacionMeal(
                             FavoritoUI(
                                 id = meal.idMeal,
                                 nombre = meal.strMeal,
-                                categoria = meal.strCategory ?: "Sin categoría",
+                                categoria = meal.strCategory ?: "No category",
                                 imagen = meal.strMealThumb ?: ""
                             )
                         )
@@ -221,7 +221,7 @@ fun TarjetaRecomendacionMeal(
             ) {
                 Icon(
                     imageVector = Icons.Default.Favorite,
-                    contentDescription = "Favorito",
+                    contentDescription = "Favorite",
                     tint = if (esFavorito) Color.Red else Color.Gray
                 )
             }
