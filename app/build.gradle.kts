@@ -86,6 +86,9 @@ dependencies {
     implementation("com.cloudinary:cloudinary-android-download:3.1.2")
     implementation("com.cloudinary:cloudinary-android-preprocess:3.1.2")
 
+    //Tensor Flow Lite
+    implementation("org.tensorflow:tensorflow-lite:+")
+
     // Tests
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
