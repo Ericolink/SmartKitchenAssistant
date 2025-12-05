@@ -30,7 +30,6 @@ import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 
-// Paleta de la app
 val Primario = Color(0xFFF9F5F0)
 val Secundario = Color(0xFFF2EAD3)
 val naranja = Color(0xFFF4991A)
@@ -68,7 +67,7 @@ fun RegisterScreen(
                     IconButton(onClick = onClickBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "volver",
+                            contentDescription = "back",
                             tint = verde
                         )
                     }
@@ -101,7 +100,7 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Registro",
+                text = "Register",
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
                 color = verde
@@ -109,7 +108,6 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // CARD MODERNA
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(22.dp),
@@ -122,27 +120,24 @@ fun RegisterScreen(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
 
-                    // Nombre
                     ModernInput(
-                        label = "Nombre de usuario",
+                        label = "Username",
                         value = inputName,
                         onValueChange = { inputName = it },
                         icon = Icons.Default.Person,
                         error = nameError
                     )
 
-                    // Email
                     ModernInput(
-                        label = "Correo electrónico",
+                        label = "Email",
                         value = inputEmail,
                         onValueChange = { inputEmail = it },
                         icon = Icons.Default.Email,
                         error = emailError
                     )
 
-                    // Contraseña
                     ModernInput(
-                        label = "Contraseña",
+                        label = "Password",
                         value = inputPassword,
                         onValueChange = { inputPassword = it },
                         icon = Icons.Default.Lock,
@@ -150,9 +145,8 @@ fun RegisterScreen(
                         error = passwordError
                     )
 
-                    // Confirmar contraseña
                     ModernInput(
-                        label = "Confirmar contraseña",
+                        label = "Confirm password",
                         value = inputPasswordConfirmation,
                         onValueChange = { inputPasswordConfirmation = it },
                         icon = Icons.Default.Lock,
@@ -172,7 +166,6 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // BOTÓN MODERNO
             Button(
                 onClick = {
 
@@ -206,20 +199,20 @@ fun RegisterScreen(
                                     }
 
                                     user?.sendEmailVerification()
-                                    successMessage = "Registro exitoso. Revisa tu correo para verificarlo."
+                                    successMessage = "Registration successful. Check your email to verify your account."
                                     auth.signOut()
 
                                 } else {
                                     registerError = when (task.exception) {
-                                        is FirebaseAuthInvalidCredentialsException -> "Correo inválido"
-                                        is FirebaseAuthUserCollisionException -> "Correo ya registrado"
-                                        else -> "Error al registrarse"
+                                        is FirebaseAuthInvalidCredentialsException -> "Invalid email"
+                                        is FirebaseAuthUserCollisionException -> "Email already registered"
+                                        else -> "Registration error"
                                     }
                                 }
                             }
 
                     } else {
-                        registerError = "Llena correctamente todos los campos."
+                        registerError = "Fill in all fields correctly."
                     }
                 },
                 modifier = Modifier
@@ -229,7 +222,7 @@ fun RegisterScreen(
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Text(
-                    text = "Registrarse",
+                    text = "Sign up",
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White

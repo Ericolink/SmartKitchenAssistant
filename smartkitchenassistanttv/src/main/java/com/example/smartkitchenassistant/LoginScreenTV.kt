@@ -1,6 +1,5 @@
 package com.example.smartkitchenassistant
 
-// Importaciones necesarias para la UI y Firebase
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -23,41 +22,34 @@ import com.google.firebase.auth.auth
 
 @Composable
 fun LoginScreenTV(
-    onLoginSuccess: (String) -> Unit // Callback cuando el login sale bien
+    onLoginSuccess: (String) -> Unit
 ) {
-    // Instancia de Firebase Auth
     val auth = Firebase.auth
-
-    // Necesario para que Firebase pueda ejecutar listeners dentro de Compose
     val activity = LocalView.current.context as Activity
 
-    // Variables del formulario controladas con remember
     var email by remember { mutableStateOf("") }
     var pass by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
 
-    // Paleta de colores personalizada
     val bgColor = Color(0xFFF2EAD3)
     val inputBg = Color(0xFFF9F5F0)
     val textColor = Color(0xFF344F1F)
     val accent = Color(0xFFF4991A)
 
-    // Box que cubre toda la pantalla y aplica el color de fondo
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(bgColor) // Fondo completo
+            .background(bgColor)
     ) {
-        // Contenedor principal del contenido
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 60.dp) // Espacio lateral para respiración visual
+                .padding(horizontal = 60.dp)
                 .align(androidx.compose.ui.Alignment.Center),
             verticalArrangement = Arrangement.Center
         ) {
 
-            // Título de la pantalla
             Text(
                 text = "Smart Display (TV)",
                 style = MaterialTheme.typography.displayMedium,
@@ -70,20 +62,19 @@ fun LoginScreenTV(
             // EMAIL
             //--------------------------------------------------------------------
 
-            Text("Correo electrónico", style = MaterialTheme.typography.titleMedium, color = textColor)
+            Text("Email", style = MaterialTheme.typography.titleMedium, color = textColor)
             Spacer(Modifier.height(10.dp))
 
-            // Campo de texto para email
             TextField(
                 value = email,
-                onValueChange = { email = it },         // Actualiza la variable email
+                onValueChange = { email = it },
                 modifier = Modifier.fillMaxWidth(),
                 colors = TextFieldDefaults.colors(
-                    unfocusedContainerColor = inputBg,   // Fondo cuando no está seleccionado
-                    focusedContainerColor = inputBg,     // Fondo cuando sí está seleccionado
+                    unfocusedContainerColor = inputBg,
+                    focusedContainerColor = inputBg,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
-                    cursorColor = textColor,             // Color de la línea del cursor
+                    cursorColor = textColor,
                     focusedTextColor = textColor,
                     unfocusedTextColor = textColor
                 )
@@ -95,15 +86,14 @@ fun LoginScreenTV(
             // PASSWORD
             //--------------------------------------------------------------------
 
-            Text("Contraseña", style = MaterialTheme.typography.titleMedium, color = textColor)
+            Text("Password", style = MaterialTheme.typography.titleMedium, color = textColor)
             Spacer(Modifier.height(10.dp))
 
-            // Campo de texto para contraseña
             TextField(
                 value = pass,
-                onValueChange = { pass = it },           // Actualiza la variable pass
+                onValueChange = { pass = it },
                 modifier = Modifier.fillMaxWidth(),
-                visualTransformation = PasswordVisualTransformation(), // Oculta caracteres
+                visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Password
                 ),
@@ -120,7 +110,6 @@ fun LoginScreenTV(
 
             Spacer(Modifier.height(25.dp))
 
-            // Si hay un error, se muestra aquí
             if (error.isNotEmpty()) {
                 Text(error, color = Color.Red)
             }
@@ -128,41 +117,38 @@ fun LoginScreenTV(
             Spacer(Modifier.height(25.dp))
 
             //--------------------------------------------------------------------
-            // BOTÓN DE INICIAR SESIÓN
+            // LOGIN BUTTON
             //--------------------------------------------------------------------
 
             Button(
                 onClick = {
-                    // Intento de login con Firebase Auth
                     auth.signInWithEmailAndPassword(email, pass)
                         .addOnCompleteListener(activity) { task ->
                             if (task.isSuccessful) {
-                                // Si se logró el login, obtener el UID del usuario
                                 val uid = auth.currentUser?.uid
                                 if (uid != null) {
-                                    onLoginSuccess(uid) // Continuar con la app
+                                    onLoginSuccess(uid)
                                 }
                             } else {
-                                // Manejo de errores comunes
                                 error = when (task.exception) {
                                     is FirebaseAuthInvalidCredentialsException ->
-                                        "Correo o contraseña incorrectos"
+                                        "Incorrect email or password"
 
                                     is FirebaseAuthInvalidUserException ->
-                                        "Esta cuenta no existe"
+                                        "This account does not exist"
 
-                                    else -> "Error al iniciar sesión"
+                                    else -> "Error signing in"
                                 }
                             }
                         }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.colors(
-                    containerColor = accent, // Color naranja del botón
+                    containerColor = accent,
                     contentColor = Color.White
                 )
             ) {
-                Text("Iniciar Sesión", style = MaterialTheme.typography.titleLarge)
+                Text("Sign In", style = MaterialTheme.typography.titleLarge)
             }
         }
     }

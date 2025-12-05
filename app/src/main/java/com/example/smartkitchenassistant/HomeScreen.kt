@@ -54,11 +54,11 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
     }
 
     val tabs = listOf(
-        BottomNavItem("Buscar", Icons.Default.Search),
-        BottomNavItem("Favoritas", Icons.Default.Favorite),
-        BottomNavItem("Despensa", Icons.AutoMirrored.Filled.List),
-        BottomNavItem("Recomendaciones", Icons.Default.Star),
-        BottomNavItem("Perfil", Icons.Default.Person)
+        BottomNavItem("Search", Icons.Default.Search),
+        BottomNavItem("Favorites", Icons.Default.Favorite),
+        BottomNavItem("Pantry", Icons.AutoMirrored.Filled.List),
+        BottomNavItem("Recommendations", Icons.Default.Star),
+        BottomNavItem("Profile", Icons.Default.Person)
     )
 
     Scaffold(
@@ -73,7 +73,7 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
                         if (fotoPerfilUrl != null && fotoPerfilUrl!!.isNotEmpty()) {
                             AsyncImage(
                                 model = fotoPerfilUrl,
-                                contentDescription = "Foto de perfil",
+                                contentDescription = "Profile photo",
                                 modifier = Modifier
                                     .size(35.dp)
                                     .clip(CircleShape)
@@ -81,7 +81,7 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
                         } else {
                             Icon(
                                 imageVector = Icons.Default.Person,
-                                contentDescription = "Sin foto",
+                                contentDescription = "No photo",
                                 modifier = Modifier
                                     .size(35.dp)
                                     .clip(CircleShape),
@@ -92,7 +92,7 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
                         Spacer(modifier = Modifier.width(10.dp))
 
                         Text(
-                            text = userName ?: user?.email ?: "invitado",
+                            text = userName ?: user?.email ?: "guest",
                             fontSize = 18.sp,
                             color = Color.Black
                         )
@@ -106,7 +106,7 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                            contentDescription = "Cerrar sesión",
+                            contentDescription = "Log out",
                             tint = Color(0xFF344F1F)
                         )
                     }
